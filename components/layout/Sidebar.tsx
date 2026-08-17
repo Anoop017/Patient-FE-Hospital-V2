@@ -59,7 +59,7 @@ export function Sidebar({ role }: { role: string }) {
   return (
     <div className="flex h-full w-64 flex-col border-r border-border bg-background">
       <div className="flex h-16 items-center border-b border-border px-6">
-        <span className="text-lg font-bold tracking-tight">Hospital Portal</span>
+        <span className="text-lg font-bold tracking-tight">Patient - Hospital Dashboard</span>
       </div>
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-1 px-3">
