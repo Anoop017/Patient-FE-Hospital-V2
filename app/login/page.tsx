@@ -61,7 +61,7 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-muted-foreground">
-            Patient - Hospital Dashboard access for Patients, Doctors, and Staff
+            Dashboard for Patients, Doctors, and Staff
           </p>
         </div>
         

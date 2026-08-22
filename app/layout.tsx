@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Patient - Hospital Dashboard",
-  description: "Patient - Hospital Dashboard for Patients, Doctors, and Staff",
+  title: "Patient - Dashboard",
+  description: "Patient - Dashboard for Patients, Doctors, and Staff",
 };
 
 export default function RootLayout({
