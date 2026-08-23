@@ -4,10 +4,11 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   Home, Calendar, Users, Settings, LogOut, FileText,
-  ClipboardList, FlaskConical, BedDouble, Pill, Stethoscope
+  ClipboardList, FlaskConical, BedDouble, Pill, Stethoscope, CreditCard
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 import { cn } from "@/lib/utils"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 
 const patientLinks = [
   { name: "Dashboard", href: "/patient/dashboard", icon: Home },
@@ -15,6 +16,7 @@ const patientLinks = [
   { name: "My Medical Records", href: "/patient/dashboard/records", icon: FileText },
   { name: "My Prescriptions", href: "/patient/dashboard/prescriptions", icon: Pill },
   { name: "My Lab Tests", href: "/patient/dashboard/lab-tests", icon: FlaskConical },
+  { name: "Billing & Invoices", href: "/patient/dashboard/billing", icon: CreditCard },
   { name: "Bed Availability", href: "/patient/dashboard/beds", icon: BedDouble },
 ]
 
@@ -84,7 +86,8 @@ export function Sidebar({ role }: { role: string }) {
           })}
         </nav>
       </div>
-      <div className="border-t border-border p-4">
+      <div className="border-t border-border p-4 space-y-1">
+        <ThemeToggle variant="full" />
         <Link
           href={settingsHref}
           className={cn(
@@ -97,7 +100,7 @@ export function Sidebar({ role }: { role: string }) {
           <Settings className="h-4 w-4" />
           <span>Settings</span>
         </Link>
-        <button onClick={logout} className="w-full flex items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors mt-1 cursor-pointer">
+        <button onClick={logout} className="w-full flex items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
           <LogOut className="h-4 w-4" />
           <span>Log out</span>
         </button>

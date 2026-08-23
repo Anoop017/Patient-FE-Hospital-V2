@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Hospital, Eye, EyeOff } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -53,7 +54,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+        <ThemeToggle variant="pill" />
+      </div>
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center">
           <Hospital className="h-12 w-12" />
