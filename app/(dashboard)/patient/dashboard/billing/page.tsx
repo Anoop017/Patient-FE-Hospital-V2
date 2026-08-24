@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 
 interface Payment {
-  id: string;
+  id: string | number;
   amount: string | number;
   paymentDate: string;
   paymentMethod: string;
@@ -36,10 +36,10 @@ interface Payment {
 }
 
 interface Bill {
-  id: string;
-  patientId?: string;
-  admissionId?: string | null;
-  appointmentId?: string | null;
+  id: string | number;
+  patientId?: string | number;
+  admissionId?: string | number | null;
+  appointmentId?: string | number | null;
   totalAmount: string | number;
   paidAmount: string | number;
   status: "unpaid" | "partially_paid" | "paid" | "cancelled" | string;
@@ -47,7 +47,7 @@ interface Bill {
   createdAt: string;
   payments?: Payment[];
   appointment?: {
-    id: string;
+    id: string | number;
     reason?: string;
     appointmentDate?: string;
     doctor?: {
@@ -56,7 +56,7 @@ interface Bill {
     };
   };
   admission?: {
-    id: string;
+    id: string | number;
     admissionDate?: string;
     dischargeDate?: string;
     roomNumber?: string;
@@ -140,6 +140,16 @@ export default function PatientBillingPage() {
     return due < today;
   };
 
+  // Helper to format invoice number nicely for both incremental IDs (INV-00001) and legacy UUIDs
+  const formatInvoiceId = (id: string | number | undefined | null) => {
+    if (id === undefined || id === null) return "INV-00000";
+    const str = String(id).trim();
+    if (!isNaN(Number(str))) {
+      return `INV-${str.padStart(5, "0")}`;
+    }
+    return `INV-${str.slice(0, 8).toUpperCase()}`;
+  };
+
   // Summary Metrics
   const metrics = useMemo(() => {
     let totalBilled = 0;
@@ -176,7 +186,7 @@ export default function PatientBillingPage() {
 
   // All payments aggregated for payment history tab
   const allPayments = useMemo(() => {
-    const paymentsList: Array<Payment & { billId: string; billDueDate: string }> = [];
+    const paymentsList: Array<Payment & { billId: string | number; billDueDate: string }> = [];
     bills.forEach((bill) => {
       if (Array.isArray(bill.payments)) {
         bill.payments.forEach((p) => {
@@ -201,7 +211,7 @@ export default function PatientBillingPage() {
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const idMatch = bill.id.toLowerCase().includes(q);
+        const idMatch = String(bill.id).toLowerCase().includes(q);
         const refMatch = bill.payments?.some((p) => p.referenceNumber?.toLowerCase().includes(q));
         const dateMatch = bill.createdAt?.toLowerCase().includes(q) || bill.dueDate?.toLowerCase().includes(q);
         return idMatch || refMatch || dateMatch;
@@ -245,9 +255,13 @@ export default function PatientBillingPage() {
     setPayError(null);
     setPaySuccess(null);
 
+    const numericBillId = !isNaN(Number(selectedBillForPay.id))
+      ? Number(selectedBillForPay.id)
+      : selectedBillForPay.id;
+
     try {
       await api.post("/billing/payments", {
-        billId: selectedBillForPay.id,
+        billId: numericBillId,
         amount: amountNum,
         paymentMethod: paymentMethod,
         referenceNumber: referenceNumber.trim() || `TXN-PAT-${Date.now().toString().slice(-6)}`,
@@ -458,7 +472,7 @@ export default function PatientBillingPage() {
           <div className="flex items-center space-x-1 bg-muted/60 p-1 rounded-lg">
             <button
               onClick={() => setActiveTab("all")}
-              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
                 activeTab === "all"
                   ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -468,7 +482,7 @@ export default function PatientBillingPage() {
             </button>
             <button
               onClick={() => setActiveTab("unpaid")}
-              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
                 activeTab === "unpaid"
                   ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -478,7 +492,7 @@ export default function PatientBillingPage() {
             </button>
             <button
               onClick={() => setActiveTab("paid")}
-              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
                 activeTab === "paid"
                   ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -488,7 +502,7 @@ export default function PatientBillingPage() {
             </button>
             <button
               onClick={() => setActiveTab("history")}
-              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
                 activeTab === "history"
                   ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -550,12 +564,12 @@ export default function PatientBillingPage() {
                         <TableRow key={bill.id} className={overdue ? "bg-red-500/5" : ""}>
                           <TableCell className="font-mono text-xs font-semibold">
                             <div className="flex flex-col">
-                              <span>INV-{bill.id.slice(0, 8).toUpperCase()}</span>
+                              <span>{formatInvoiceId(bill.id)}</span>
                               {bill.appointmentId && (
-                                <span className="text-[11px] font-sans text-muted-foreground">Appt #{bill.appointmentId.slice(0, 6)}</span>
+                                <span className="text-[11px] font-sans text-muted-foreground">Appt #{bill.appointmentId}</span>
                               )}
                               {bill.admissionId && (
-                                <span className="text-[11px] font-sans text-muted-foreground">Admission #{bill.admissionId.slice(0, 6)}</span>
+                                <span className="text-[11px] font-sans text-muted-foreground">Admission #{bill.admissionId}</span>
                               )}
                             </div>
                           </TableCell>
@@ -651,7 +665,7 @@ export default function PatientBillingPage() {
                           {payment.paymentDate ? new Date(payment.paymentDate).toLocaleString() : "—"}
                         </TableCell>
                         <TableCell className="font-mono text-xs">
-                          INV-{payment.billId.slice(0, 8).toUpperCase()}
+                          {formatInvoiceId(payment.billId)}
                         </TableCell>
                         <TableCell className="text-sm">
                           <span className="inline-flex items-center gap-1.5">
@@ -688,7 +702,7 @@ export default function PatientBillingPage() {
             Make a Payment
           </DialogTitle>
           <DialogDescription>
-            Complete direct bill settlement for Invoice #{selectedBillForPay?.id.slice(0, 8).toUpperCase()}.
+            Complete direct bill settlement for {formatInvoiceId(selectedBillForPay?.id)}.
           </DialogDescription>
         </DialogHeader>
 
@@ -858,7 +872,7 @@ export default function PatientBillingPage() {
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Invoice Number</p>
                 <p className="text-sm font-mono font-bold">
-                  {receiptDetails?.invoiceNumber || `INV-${selectedBillForInvoice.id.slice(0, 8).toUpperCase()}`}
+                  {receiptDetails?.invoiceNumber || formatInvoiceId(selectedBillForInvoice.id)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Date Issued</p>
                 <p className="text-xs font-medium">
@@ -893,7 +907,7 @@ export default function PatientBillingPage() {
                     : "General Medical Services"}
                 </span>
                 {selectedBillForInvoice.appointmentId && (
-                  <p className="text-muted-foreground mt-0.5">Appointment Ref: #{selectedBillForInvoice.appointmentId.slice(0, 8)}</p>
+                  <p className="text-muted-foreground mt-0.5">Appointment Ref: #{selectedBillForInvoice.appointmentId}</p>
                 )}
               </div>
               <div className="text-right">

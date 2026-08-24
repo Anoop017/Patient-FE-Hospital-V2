@@ -148,10 +148,12 @@ export default function PatientAppointments() {
 
     try {
       const appointmentDateTime = new Date(`${selectedDate}T${selectedTimeSlot}:00`).toISOString();
+      const numericPatientId = !isNaN(Number(patientId)) ? Number(patientId) : patientId;
+      const numericDoctorId = !isNaN(Number(selectedDoctor)) ? Number(selectedDoctor) : selectedDoctor;
 
       await api.post("/appointments", {
-        patientId,
-        doctorId: selectedDoctor,
+        patientId: numericPatientId,
+        doctorId: numericDoctorId,
         appointmentDate: appointmentDateTime,
         reason,
         notes,
@@ -281,7 +283,7 @@ export default function PatientAppointments() {
       <div className="flex items-center space-x-1 bg-muted/60 p-1 rounded-lg w-fit">
         <button
           onClick={() => setStatusFilter("all")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
             statusFilter === "all"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
@@ -291,7 +293,7 @@ export default function PatientAppointments() {
         </button>
         <button
           onClick={() => setStatusFilter("scheduled")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
             statusFilter === "scheduled"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
@@ -301,7 +303,7 @@ export default function PatientAppointments() {
         </button>
         <button
           onClick={() => setStatusFilter("completed")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
             statusFilter === "completed"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
@@ -311,7 +313,7 @@ export default function PatientAppointments() {
         </button>
         <button
           onClick={() => setStatusFilter("cancelled")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
             statusFilter === "cancelled"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"

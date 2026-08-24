@@ -46,7 +46,8 @@ export default function DoctorMedicalRecords() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post("/medical-records", { patientId, diagnosis, treatment, notes });
+      const numericPatientId = !isNaN(Number(patientId)) ? Number(patientId) : patientId;
+      await api.post("/medical-records", { patientId: numericPatientId, diagnosis, treatment, notes });
       setDialogOpen(false);
       setPatientId(""); setDiagnosis(""); setTreatment(""); setNotes("");
       fetchRecords();
@@ -113,7 +114,7 @@ export default function DoctorMedicalRecords() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="patientId">Patient ID</Label>
-              <Input id="patientId" value={patientId} onChange={(e) => setPatientId(e.target.value)} placeholder="Patient UUID" required />
+              <Input id="patientId" value={patientId} onChange={(e) => setPatientId(e.target.value)} placeholder="e.g. 1" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="diagnosis">Diagnosis</Label>

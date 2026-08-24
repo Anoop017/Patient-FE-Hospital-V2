@@ -46,7 +46,8 @@ export default function DoctorPrescriptions() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post("/prescriptions", { patientId, medication, dosage, frequency, duration, notes });
+      const numericPatientId = !isNaN(Number(patientId)) ? Number(patientId) : patientId;
+      await api.post("/prescriptions", { patientId: numericPatientId, medication, dosage, frequency, duration, notes });
       setDialogOpen(false);
       setPatientId(""); setMedication(""); setDosage(""); setFrequency(""); setDuration(""); setNotes("");
       fetchData();
@@ -115,7 +116,7 @@ export default function DoctorPrescriptions() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="patientId">Patient ID</Label>
-              <Input id="patientId" value={patientId} onChange={(e) => setPatientId(e.target.value)} placeholder="Patient UUID" required />
+              <Input id="patientId" value={patientId} onChange={(e) => setPatientId(e.target.value)} placeholder="e.g. 1" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="medication">Medication</Label>

@@ -209,7 +209,7 @@ export function Topbar({ user }: { user: any }) {
                       <div className="flex items-center gap-2.5 text-muted-foreground">
                         <Shield className="h-3.5 w-3.5 shrink-0 text-primary" />
                         <span>
-                          Patient ID: <code className="text-[11px] font-mono font-bold text-foreground">#{String(patientId).slice(0, 8)}</code>
+                          Patient ID: <code className="text-[11px] font-mono font-bold text-foreground">#{String(patientId)}</code>
                         </span>
                       </div>
                     )}

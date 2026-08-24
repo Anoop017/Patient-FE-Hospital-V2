@@ -87,7 +87,7 @@ export function Sidebar({ role }: { role: string }) {
         </nav>
       </div>
       <div className="border-t border-border p-4 space-y-1">
-        <ThemeToggle variant="full" />
+        {/* <ThemeToggle variant="full" />   // Removed the toggle because we not need that*/}
         <Link
           href={settingsHref}
           className={cn(
