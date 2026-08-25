@@ -8,30 +8,48 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Select } from "@/components/ui/select";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Plus } from "lucide-react";
 
 export default function DoctorLabTests() {
   const [tests, setTests] = useState<any[]>([]);
+  const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const [doctorId, setDoctorId] = useState<number | null>(null);
   const [patientId, setPatientId] = useState("");
   const [testName, setTestName] = useState("");
-  const [notes, setNotes] = useState("");
+  const [testType, setTestType] = useState("Blood Test");
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+    fetchPatients();
+    fetchDoctorProfile();
+  }, []);
+
+  const fetchDoctorProfile = async () => {
+    try {
+      const res = await api.get("/doctors/me").catch(() => null);
+      if (res?.data?.id) {
+        setDoctorId(res.data.id);
+      }
+    } catch {}
+  };
 
   const fetchData = async () => {
     try {
       const res = await api.get("/laboratory/me");
-      setTests(Array.isArray(res.data) ? res.data : []);
+      const list = Array.isArray(res.data) ? res.data : Array.isArray(res.data?.data) ? res.data.data : [];
+      setTests(list);
     } catch (error) {
       try {
         const fallbackRes = await api.get("/laboratory");
-        setTests(Array.isArray(fallbackRes.data) ? fallbackRes.data : []);
+        const list = Array.isArray(fallbackRes.data) ? fallbackRes.data : Array.isArray(fallbackRes.data?.data) ? fallbackRes.data.data : [];
+        setTests(list);
       } catch {
         setTests([]);
       }
@@ -40,14 +58,61 @@ export default function DoctorLabTests() {
     }
   };
 
+  const fetchPatients = async () => {
+    try {
+      const [patRes, apptRes] = await Promise.allSettled([
+        api.get("/patients?take=100"),
+        api.get("/appointments/me"),
+      ]);
+
+      const map = new Map<string | number, any>();
+
+      if (patRes.status === "fulfilled") {
+        const data = patRes.value.data;
+        const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+        list.forEach((p: any) => {
+          if (p?.id) map.set(p.id, p);
+        });
+      }
+
+      if (apptRes.status === "fulfilled") {
+        const data = apptRes.value.data;
+        const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+        list.forEach((a: any) => {
+          if (a?.patient?.id && !map.has(a.patient.id)) {
+            map.set(a.patient.id, a.patient);
+          }
+        });
+      }
+
+      setPatients(Array.from(map.values()));
+    } catch (error) {
+      console.error("Failed to load patients", error);
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
+      let activeDocId = doctorId;
+      if (!activeDocId) {
+        const docRes = await api.get("/doctors/me").catch(() => null);
+        activeDocId = docRes?.data?.id || 1;
+      }
+
       const numericPatientId = !isNaN(Number(patientId)) ? Number(patientId) : patientId;
-      await api.post("/laboratory", { patientId: numericPatientId, testName, notes });
+      const payload: any = {
+        patientId: numericPatientId,
+        doctorId: Number(activeDocId),
+        testName,
+        testType: testType || "General",
+        status: "pending",
+      };
+
+      await api.post("/laboratory", payload);
       setDialogOpen(false);
-      setPatientId(""); setTestName(""); setNotes("");
+      setPatientId(""); setTestName(""); setTestType("Blood Test");
       fetchData();
     } catch (error: any) {
       alert(error.response?.data?.message || "Failed to order lab test.");
@@ -89,19 +154,21 @@ export default function DoctorLabTests() {
                 <TableHead>Date</TableHead>
                 <TableHead>Patient</TableHead>
                 <TableHead>Test Name</TableHead>
+                <TableHead>Test Type</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Result</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {tests.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No lab tests found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No lab tests found.</TableCell></TableRow>
               ) : (
                 tests.map((test) => (
                   <TableRow key={test.id}>
-                    <TableCell>{new Date(test.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(test.createdAt || test.testDate).toLocaleDateString()}</TableCell>
                     <TableCell>{test.patient?.user ? `${test.patient.user.firstName} ${test.patient.user.lastName}` : "—"}</TableCell>
                     <TableCell className="font-medium">{test.testName || test.name || "—"}</TableCell>
+                    <TableCell>{test.testType || "General"}</TableCell>
                     <TableCell>{getStatusBadge(test.status)}</TableCell>
                     <TableCell>{test.result || "Pending"}</TableCell>
                   </TableRow>
@@ -120,16 +187,47 @@ export default function DoctorLabTests() {
         <form onSubmit={handleCreate}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="patientId">Patient ID</Label>
-              <Input id="patientId" value={patientId} onChange={(e) => setPatientId(e.target.value)} placeholder="e.g. 1" required />
+              <Label htmlFor="patientId">Patient</Label>
+              <Select
+                id="patientId"
+                value={patientId}
+                onChange={(e) => setPatientId(e.target.value)}
+                required
+              >
+                <option value="">Select a patient...</option>
+                {patients.map((p) => {
+                  const name = p.user
+                    ? `${p.user.firstName || ""} ${p.user.lastName || ""}`.trim()
+                    : p.name || `Patient #${p.id}`;
+                  const email = p.user?.email ? ` (${p.user.email})` : "";
+                  return (
+                    <option key={p.id} value={p.id}>
+                      {name || `Patient #${p.id}`}{email}
+                    </option>
+                  );
+                })}
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="testName">Test Name</Label>
               <Input id="testName" value={testName} onChange={(e) => setTestName(e.target.value)} placeholder="Complete Blood Count" required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes (optional)</Label>
-              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <Label htmlFor="testType">Test Type</Label>
+              <Select
+                id="testType"
+                value={testType}
+                onChange={(e) => setTestType(e.target.value)}
+                required
+              >
+                <option value="Blood Test">Blood Test</option>
+                <option value="Urine Test">Urine Test</option>
+                <option value="Imaging / X-Ray / CT">Imaging / X-Ray / CT</option>
+                <option value="Biochemistry">Biochemistry</option>
+                <option value="Microbiology">Microbiology</option>
+                <option value="Pathology">Pathology</option>
+                <option value="General">General</option>
+              </Select>
             </div>
           </div>
           <DialogFooter>

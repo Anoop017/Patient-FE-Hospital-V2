@@ -15,24 +15,58 @@ import { Plus } from "lucide-react";
 
 export default function DoctorAdmissions() {
   const [admissions, setAdmissions] = useState<any[]>([]);
+  const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const [doctorId, setDoctorId] = useState<number | null>(null);
+  const [beds, setBeds] = useState<any[]>([]);
   const [patientId, setPatientId] = useState("");
+  const [bedId, setBedId] = useState("");
   const [reason, setReason] = useState("");
-  const [notes, setNotes] = useState("");
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+    fetchPatients();
+    fetchDoctorProfile();
+    fetchBeds();
+  }, []);
+
+  const fetchDoctorProfile = async () => {
+    try {
+      const res = await api.get("/doctors/me").catch(() => null);
+      if (res?.data?.id) {
+        setDoctorId(res.data.id);
+      }
+    } catch {}
+  };
+
+  const fetchBeds = async () => {
+    try {
+      const res = await api.get("/beds").catch(() => null);
+      const data = res?.data;
+      const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+      setBeds(list);
+      const firstAvailable = list.find((b: any) => b.status?.toLowerCase() === "available");
+      if (firstAvailable) {
+        setBedId(String(firstAvailable.id));
+      } else if (list.length > 0) {
+        setBedId(String(list[0].id));
+      }
+    } catch {}
+  };
 
   const fetchData = async () => {
     try {
       const res = await api.get("/admissions/me");
-      setAdmissions(Array.isArray(res.data) ? res.data : []);
+      const list = Array.isArray(res.data) ? res.data : Array.isArray(res.data?.data) ? res.data.data : [];
+      setAdmissions(list);
     } catch (error) {
       try {
         const fallbackRes = await api.get("/admissions");
-        setAdmissions(Array.isArray(fallbackRes.data) ? fallbackRes.data : []);
+        const list = Array.isArray(fallbackRes.data) ? fallbackRes.data : Array.isArray(fallbackRes.data?.data) ? fallbackRes.data.data : [];
+        setAdmissions(list);
       } catch {
         setAdmissions([]);
       }
@@ -41,15 +75,70 @@ export default function DoctorAdmissions() {
     }
   };
 
+  const fetchPatients = async () => {
+    try {
+      const [patRes, apptRes] = await Promise.allSettled([
+        api.get("/patients?take=100"),
+        api.get("/appointments/me"),
+      ]);
+
+      const map = new Map<string | number, any>();
+
+      if (patRes.status === "fulfilled") {
+        const data = patRes.value.data;
+        const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+        list.forEach((p: any) => {
+          if (p?.id) map.set(p.id, p);
+        });
+      }
+
+      if (apptRes.status === "fulfilled") {
+        const data = apptRes.value.data;
+        const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+        list.forEach((a: any) => {
+          if (a?.patient?.id && !map.has(a.patient.id)) {
+            map.set(a.patient.id, a.patient);
+          }
+        });
+      }
+
+      setPatients(Array.from(map.values()));
+    } catch (error) {
+      console.error("Failed to load patients", error);
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
+      if (!bedId) {
+        alert("Please select an available bed before admitting a patient.");
+        setSubmitting(false);
+        return;
+      }
+
+      let activeDocId = doctorId;
+      if (!activeDocId) {
+        const docRes = await api.get("/doctors/me").catch(() => null);
+        activeDocId = docRes?.data?.id || 1;
+      }
+
       const numericPatientId = !isNaN(Number(patientId)) ? Number(patientId) : patientId;
-      await api.post("/admissions", { patientId: numericPatientId, reason, notes });
+      const payload: any = {
+        patientId: numericPatientId,
+        admittingDoctorId: Number(activeDocId),
+        bedId: Number(bedId),
+        admissionDate: new Date().toISOString(),
+        reason,
+        status: "admitted",
+      };
+
+      await api.post("/admissions", payload);
       setDialogOpen(false);
-      setPatientId(""); setReason(""); setNotes("");
+      setPatientId(""); setReason("");
       fetchData();
+      fetchBeds();
     } catch (error: any) {
       alert(error.response?.data?.message || "Failed to create admission.");
     } finally {
@@ -61,6 +150,7 @@ export default function DoctorAdmissions() {
     try {
       await api.patch(`/admissions/${id}`, { status: "discharged" });
       fetchData();
+      fetchBeds();
     } catch (error: any) {
       alert(error.response?.data?.message || "Failed to discharge.");
     }
@@ -98,6 +188,7 @@ export default function DoctorAdmissions() {
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Patient</TableHead>
+                <TableHead>Bed / Ward</TableHead>
                 <TableHead>Reason</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
@@ -105,12 +196,13 @@ export default function DoctorAdmissions() {
             </TableHeader>
             <TableBody>
               {admissions.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No admissions found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No admissions found.</TableCell></TableRow>
               ) : (
                 admissions.map((adm) => (
                   <TableRow key={adm.id}>
-                    <TableCell>{new Date(adm.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(adm.createdAt || adm.admissionDate).toLocaleDateString()}</TableCell>
                     <TableCell>{adm.patient?.user ? `${adm.patient.user.firstName} ${adm.patient.user.lastName}` : "—"}</TableCell>
+                    <TableCell>{adm.bed ? `Bed ${adm.bed.bedNumber} (${adm.bed.ward?.name || "General"})` : "—"}</TableCell>
                     <TableCell>{adm.reason || "—"}</TableCell>
                     <TableCell>{getStatusBadge(adm.status)}</TableCell>
                     <TableCell>
@@ -134,16 +226,46 @@ export default function DoctorAdmissions() {
         <form onSubmit={handleCreate}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="patientId">Patient ID</Label>
-              <Input id="patientId" value={patientId} onChange={(e) => setPatientId(e.target.value)} placeholder="e.g. 1" required />
+              <Label htmlFor="patientId">Patient</Label>
+              <Select
+                id="patientId"
+                value={patientId}
+                onChange={(e) => setPatientId(e.target.value)}
+                required
+              >
+                <option value="">Select a patient...</option>
+                {patients.map((p) => {
+                  const name = p.user
+                    ? `${p.user.firstName || ""} ${p.user.lastName || ""}`.trim()
+                    : p.name || `Patient #${p.id}`;
+                  const email = p.user?.email ? ` (${p.user.email})` : "";
+                  return (
+                    <option key={p.id} value={p.id}>
+                      {name || `Patient #${p.id}`}{email}
+                    </option>
+                  );
+                })}
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bedId">Assign Bed</Label>
+              <Select
+                id="bedId"
+                value={bedId}
+                onChange={(e) => setBedId(e.target.value)}
+                required
+              >
+                <option value="">Select an available bed...</option>
+                {beds.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    Bed #{b.bedNumber} — {b.ward?.name || "General Ward"} ({b.status})
+                  </option>
+                ))}
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="reason">Reason for Admission</Label>
-              <Input id="reason" value={reason} onChange={(e) => setReason(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (optional)</Label>
-              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <Input id="reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Severe Appendicitis" required />
             </div>
           </div>
           <DialogFooter>

@@ -29,6 +29,8 @@ import { useTheme } from "next-themes";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 
+import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
+
 export function Topbar({ user }: { user: any }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { role, logout } = useAuth();
@@ -133,11 +135,8 @@ export function Topbar({ user }: { user: any }) {
           )}
         </Button>
 
-        {/* Notifications Button */}
-        <Button variant="ghost" size="sm" className="h-9 w-9 rounded-full px-0 hover:bg-muted">
-          <Bell className="h-4 w-4 text-muted-foreground" />
-          <span className="sr-only">Notifications</span>
-        </Button>
+        {/* Notifications Dropdown */}
+        <NotificationDropdown />
 
         {/* Profile Trigger & Dropdown Menu */}
         <div className="relative" ref={dropdownRef}>

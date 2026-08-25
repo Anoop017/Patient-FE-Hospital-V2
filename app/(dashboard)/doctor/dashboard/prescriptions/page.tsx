@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Plus } from "lucide-react";
 
 export default function DoctorPrescriptions() {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -24,16 +26,33 @@ export default function DoctorPrescriptions() {
   const [duration, setDuration] = useState("");
   const [notes, setNotes] = useState("");
 
-  useEffect(() => { fetchData(); }, []);
+  const [doctorId, setDoctorId] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchData();
+    fetchPatients();
+    fetchDoctorProfile();
+  }, []);
+
+  const fetchDoctorProfile = async () => {
+    try {
+      const res = await api.get("/doctors/me").catch(() => null);
+      if (res?.data?.id) {
+        setDoctorId(res.data.id);
+      }
+    } catch {}
+  };
 
   const fetchData = async () => {
     try {
       const res = await api.get("/prescriptions/me");
-      setPrescriptions(Array.isArray(res.data) ? res.data : []);
+      const list = Array.isArray(res.data) ? res.data : Array.isArray(res.data?.data) ? res.data.data : [];
+      setPrescriptions(list);
     } catch (error) {
       try {
         const fallbackRes = await api.get("/prescriptions");
-        setPrescriptions(Array.isArray(fallbackRes.data) ? fallbackRes.data : []);
+        const list = Array.isArray(fallbackRes.data) ? fallbackRes.data : Array.isArray(fallbackRes.data?.data) ? fallbackRes.data.data : [];
+        setPrescriptions(list);
       } catch {
         setPrescriptions([]);
       }
@@ -42,12 +61,62 @@ export default function DoctorPrescriptions() {
     }
   };
 
+  const fetchPatients = async () => {
+    try {
+      const [patRes, apptRes] = await Promise.allSettled([
+        api.get("/patients?take=100"),
+        api.get("/appointments/me"),
+      ]);
+
+      const map = new Map<string | number, any>();
+
+      if (patRes.status === "fulfilled") {
+        const data = patRes.value.data;
+        const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+        list.forEach((p: any) => {
+          if (p?.id) map.set(p.id, p);
+        });
+      }
+
+      if (apptRes.status === "fulfilled") {
+        const data = apptRes.value.data;
+        const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+        list.forEach((a: any) => {
+          if (a?.patient?.id && !map.has(a.patient.id)) {
+            map.set(a.patient.id, a.patient);
+          }
+        });
+      }
+
+      setPatients(Array.from(map.values()));
+    } catch (error) {
+      console.error("Failed to load patients", error);
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
+      let activeDocId = doctorId;
+      if (!activeDocId) {
+        const docRes = await api.get("/doctors/me").catch(() => null);
+        activeDocId = docRes?.data?.id || 1;
+      }
+
       const numericPatientId = !isNaN(Number(patientId)) ? Number(patientId) : patientId;
-      await api.post("/prescriptions", { patientId: numericPatientId, medication, dosage, frequency, duration, notes });
+      const payload: any = {
+        patientId: numericPatientId,
+        doctorId: Number(activeDocId),
+        medication,
+        dosage,
+        frequency,
+        duration,
+        issuedDate: new Date().toISOString(),
+      };
+      if (notes) payload.notes = notes;
+
+      await api.post("/prescriptions", payload);
       setDialogOpen(false);
       setPatientId(""); setMedication(""); setDosage(""); setFrequency(""); setDuration(""); setNotes("");
       fetchData();
@@ -115,8 +184,26 @@ export default function DoctorPrescriptions() {
         <form onSubmit={handleCreate}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="patientId">Patient ID</Label>
-              <Input id="patientId" value={patientId} onChange={(e) => setPatientId(e.target.value)} placeholder="e.g. 1" required />
+              <Label htmlFor="patientId">Patient</Label>
+              <Select
+                id="patientId"
+                value={patientId}
+                onChange={(e) => setPatientId(e.target.value)}
+                required
+              >
+                <option value="">Select a patient...</option>
+                {patients.map((p) => {
+                  const name = p.user
+                    ? `${p.user.firstName || ""} ${p.user.lastName || ""}`.trim()
+                    : p.name || `Patient #${p.id}`;
+                  const email = p.user?.email ? ` (${p.user.email})` : "";
+                  return (
+                    <option key={p.id} value={p.id}>
+                      {name || `Patient #${p.id}`}{email}
+                    </option>
+                  );
+                })}
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="medication">Medication</Label>

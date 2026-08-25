@@ -7,31 +7,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Plus } from "lucide-react";
 
 export default function StaffMedicalRecords() {
   const [records, setRecords] = useState<any[]>([]);
+  const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [patientId, setPatientId] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
+  const [symptoms, setSymptoms] = useState("");
   const [treatment, setTreatment] = useState("");
   const [notes, setNotes] = useState("");
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+    fetchPatients();
+  }, []);
 
   const fetchData = async () => {
     try {
       const res = await api.get("/medical-records").catch(() => ({ data: [] }));
-      setRecords(Array.isArray(res.data) ? res.data : []);
+      const list = Array.isArray(res.data) ? res.data : Array.isArray(res.data?.data) ? res.data.data : [];
+      setRecords(list);
     } catch (error) {
       setRecords([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPatients = async () => {
+    try {
+      const res = await api.get("/patients?take=100").catch(() => ({ data: [] }));
+      const data = res?.data;
+      const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+      setPatients(list);
+    } catch (error) {
+      console.error("Failed to load patients", error);
     }
   };
 
@@ -40,9 +58,9 @@ export default function StaffMedicalRecords() {
     setSubmitting(true);
     try {
       const numericPatientId = !isNaN(Number(patientId)) ? Number(patientId) : patientId;
-      await api.post("/medical-records", { patientId: numericPatientId, diagnosis, treatment, notes });
+      await api.post("/medical-records", { patientId: numericPatientId, diagnosis, symptoms, treatment, notes });
       setDialogOpen(false);
-      setPatientId(""); setDiagnosis(""); setTreatment(""); setNotes("");
+      setPatientId(""); setDiagnosis(""); setSymptoms(""); setTreatment(""); setNotes("");
       fetchData();
     } catch (error: any) {
       alert(error.response?.data?.message || "Failed to create record.");
@@ -75,19 +93,21 @@ export default function StaffMedicalRecords() {
                 <TableHead>Date</TableHead>
                 <TableHead>Patient</TableHead>
                 <TableHead>Diagnosis</TableHead>
+                <TableHead>Symptoms</TableHead>
                 <TableHead>Treatment</TableHead>
                 <TableHead>Created By</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {records.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No records found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No records found.</TableCell></TableRow>
               ) : (
                 records.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell>{new Date(r.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>{r.patient?.user ? `${r.patient.user.firstName} ${r.patient.user.lastName}` : "—"}</TableCell>
                     <TableCell>{r.diagnosis || "—"}</TableCell>
+                    <TableCell>{r.symptoms || "—"}</TableCell>
                     <TableCell>{r.treatment || "—"}</TableCell>
                     <TableCell>{r.doctor?.user ? `Dr. ${r.doctor.user.firstName} ${r.doctor.user.lastName}` : "—"}</TableCell>
                   </TableRow>
@@ -106,12 +126,34 @@ export default function StaffMedicalRecords() {
         <form onSubmit={handleCreate}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="patientId">Patient ID</Label>
-              <Input id="patientId" value={patientId} onChange={(e) => setPatientId(e.target.value)} placeholder="e.g. 1" required />
+              <Label htmlFor="patientId">Patient</Label>
+              <Select
+                id="patientId"
+                value={patientId}
+                onChange={(e) => setPatientId(e.target.value)}
+                required
+              >
+                <option value="">Select a patient...</option>
+                {patients.map((p) => {
+                  const name = p.user
+                    ? `${p.user.firstName || ""} ${p.user.lastName || ""}`.trim()
+                    : p.name || `Patient #${p.id}`;
+                  const email = p.user?.email ? ` (${p.user.email})` : "";
+                  return (
+                    <option key={p.id} value={p.id}>
+                      {name || `Patient #${p.id}`}{email}
+                    </option>
+                  );
+                })}
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="diagnosis">Diagnosis</Label>
               <Input id="diagnosis" value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="symptoms">Symptoms</Label>
+              <Input id="symptoms" value={symptoms} onChange={(e) => setSymptoms(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="treatment">Treatment</Label>
