@@ -88,23 +88,35 @@ export function Topbar({ user }: { user: any }) {
   // Extract display information
   const firstName = detailedProfile?.user?.firstName || user?.firstName || "";
   const lastName = detailedProfile?.user?.lastName || user?.lastName || "";
-  const fullName = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : (user?.name || "User");
+  const fullName = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : (typeof user?.name === "string" ? user.name : "User");
   const email = detailedProfile?.user?.email || user?.email || "No email available";
   const mobile = detailedProfile?.user?.mobile || user?.mobile || detailedProfile?.mobile || user?.phone || "Not provided";
-  const bloodGroup = detailedProfile?.bloodGroup;
-  const specialization = detailedProfile?.specialization;
-  const department = detailedProfile?.department || detailedProfile?.ward?.name;
+  
+  const bloodGroup = typeof detailedProfile?.bloodGroup === "object"
+    ? detailedProfile?.bloodGroup?.name || detailedProfile?.bloodGroup?.type || ""
+    : (typeof detailedProfile?.bloodGroup === "string" ? detailedProfile.bloodGroup : "");
+
+  const specialization = typeof detailedProfile?.specialization === "object"
+    ? detailedProfile?.specialization?.name || detailedProfile?.specialization?.title || ""
+    : (typeof detailedProfile?.specialization === "string" ? detailedProfile.specialization : "");
+
+  const department = typeof detailedProfile?.department === "object"
+    ? detailedProfile?.department?.name || detailedProfile?.department?.title || ""
+    : (typeof detailedProfile?.department === "string" 
+        ? detailedProfile.department 
+        : (typeof detailedProfile?.ward?.name === "string" ? detailedProfile.ward.name : ""));
+
   const patientId = detailedProfile?.id || user?.id;
 
   // Initials for avatar badge
-  const initials = fullName
+  const initials = (typeof fullName === "string" ? fullName : "User")
     .split(" ")
     .map((n: string) => n[0])
     .join("")
     .slice(0, 2)
     .toUpperCase() || "U";
 
-  const settingsHref = `/${role || "patient"}/dashboard/settings`;
+  const settingsHref = `/${typeof role === "string" ? role : "patient"}/dashboard/settings`;
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-background px-6">
