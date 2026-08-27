@@ -20,13 +20,15 @@ import {
   Stethoscope,
   Building2,
   Calendar,
-  CheckCircle2
+  CheckCircle2,
+  Menu,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/context/AuthContext";
+import { useSidebar } from "@/context/SidebarContext";
 import { api } from "@/lib/api";
 
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
@@ -34,6 +36,7 @@ import { NotificationDropdown } from "@/components/notifications/NotificationDro
 export function Topbar({ user }: { user: any }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { role, logout } = useAuth();
+  const { toggleMobileOpen } = useSidebar();
   const [mounted, setMounted] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [detailedProfile, setDetailedProfile] = useState<any>(null);
@@ -119,31 +122,47 @@ export function Topbar({ user }: { user: any }) {
   const settingsHref = `/${typeof role === "string" ? role : "patient"}/dashboard/settings`;
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-background px-6">
-      {/* Search Bar */}
-      <div className="flex w-full max-w-md items-center space-x-2">
-        <Search className="h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search..."
-          className="h-9 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0 shadow-none"
-        />
+    <header className="flex h-16 items-center justify-between border-b border-border bg-background px-3 sm:px-6 shrink-0 z-30">
+      {/* Left Area: Mobile Hamburger + Search */}
+      <div className="flex items-center flex-1 max-w-xs sm:max-w-md gap-1 sm:gap-2">
+        {/* Mobile Hamburger Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleMobileOpen}
+          className="h-9 w-9 p-0 md:hidden rounded-lg hover:bg-muted text-foreground shrink-0"
+          aria-label="Open navigation menu"
+          title="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
+        {/* Search Bar */}
+        <div className="flex w-full items-center space-x-2">
+          <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+          <Input
+            type="search"
+            placeholder="Search..."
+            className="h-9 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0 shadow-none text-sm w-full"
+          />
+        </div>
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
         {/* Theme Toggle Icon Button */}
         <Button
           variant="ghost"
           size="sm"
-          className="h-9 w-9 rounded-full px-0 hover:bg-muted"
+          className="h-9 w-9 rounded-full px-0 hover:bg-muted shrink-0"
           onClick={() => setTheme(isDark ? "light" : "dark")}
           aria-label="Toggle theme"
+          title="Toggle theme"
         >
           {mounted && isDark ? (
             <Sun className="h-4 w-4 text-amber-500" />
           ) : (
-            <Moon className="h-4 w-4 text-slate-700" />
+            <Moon className="h-4 w-4 text-slate-700 dark:text-slate-300" />
           )}
         </Button>
 
@@ -154,27 +173,27 @@ export function Topbar({ user }: { user: any }) {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center space-x-2.5 rounded-full p-1 sm:px-2.5 sm:py-1 hover:bg-muted/80 transition-colors cursor-pointer border border-transparent hover:border-border focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex items-center space-x-2 rounded-full p-1 sm:px-2.5 sm:py-1 hover:bg-muted/80 transition-colors cursor-pointer border border-transparent hover:border-border focus:outline-none focus:ring-2 focus:ring-ring"
             aria-expanded={dropdownOpen}
             aria-haspopup="true"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-xs shadow-xs">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-xs shadow-xs shrink-0">
               {initials}
             </div>
             <div className="hidden sm:flex flex-col items-start text-left">
-              <span className="text-sm font-medium leading-tight text-foreground">
+              <span className="text-sm font-medium leading-tight text-foreground truncate max-w-[130px]">
                 {fullName}
               </span>
               <span className="text-[11px] font-medium text-muted-foreground capitalize">
                 {role || "Patient"}
               </span>
             </div>
-            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform shrink-0 ${dropdownOpen ? "rotate-180" : ""}`} />
           </button>
 
           {/* Profile Popover / Dropdown Card */}
           {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-80 rounded-xl border border-border bg-background p-4 shadow-xl z-50 animate-in fade-in-0 zoom-in-95">
+            <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm rounded-xl border border-border bg-background p-4 shadow-xl z-50 animate-in fade-in-0 zoom-in-95">
               {/* Profile Header */}
               <div className="flex items-start gap-3 border-b border-border pb-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm">
@@ -250,6 +269,7 @@ export function Topbar({ user }: { user: any }) {
               <div className="border-t border-border pt-2 space-y-1">
                 <Link
                   href={settingsHref}
+                  onClick={() => setDropdownOpen(false)}
                   className="flex items-center gap-2.5 w-full rounded-md px-2.5 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                 >
                   <Settings className="h-3.5 w-3.5" />
@@ -262,7 +282,7 @@ export function Topbar({ user }: { user: any }) {
                   className="flex items-center justify-between w-full rounded-md px-2.5 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5">
-                    {isDark ? <Sun className="h-3.5 w-3.5 text-amber-500" /> : <Moon className="h-3.5 w-3.5 text-slate-700" />}
+                    {isDark ? <Sun className="h-3.5 w-3.5 text-amber-500" /> : <Moon className="h-3.5 w-3.5 text-slate-700 dark:text-slate-300" />}
                     <span>Theme</span>
                   </div>
                   <span className="text-[11px] font-semibold text-foreground">
@@ -272,8 +292,11 @@ export function Topbar({ user }: { user: any }) {
 
                 <button
                   type="button"
-                  onClick={logout}
-                  className="flex items-center gap-2.5 w-full rounded-md px-2.5 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    logout();
+                  }}
+                  className="flex items-center gap-2.5 w-full rounded-md px-2.5 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                   <span>Log out</span>

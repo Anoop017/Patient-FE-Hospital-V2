@@ -136,12 +136,12 @@ export default function DoctorLabTests() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Lab Tests</h1>
           <p className="text-muted-foreground">Order and manage laboratory tests.</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> Order Lab Test
         </Button>
       </div>
@@ -151,12 +151,12 @@ export default function DoctorLabTests() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Patient</TableHead>
-                <TableHead>Test Name</TableHead>
-                <TableHead>Test Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Result</TableHead>
+                <TableHead className="whitespace-nowrap">Date</TableHead>
+                <TableHead className="whitespace-nowrap">Patient</TableHead>
+                <TableHead className="whitespace-nowrap">Test Name</TableHead>
+                <TableHead className="whitespace-nowrap">Test Type</TableHead>
+                <TableHead className="whitespace-nowrap">Status</TableHead>
+                <TableHead className="whitespace-nowrap">Result</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -92,7 +92,7 @@ export function ChangePasswordForm() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
             {loading ? "Updating..." : "Update Password"}
           </Button>
         </CardFooter>

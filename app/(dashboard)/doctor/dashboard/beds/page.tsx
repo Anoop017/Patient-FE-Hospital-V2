@@ -62,7 +62,7 @@ export default function DoctorBeds() {
         <p className="text-muted-foreground">View and assign beds across wards.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Beds</CardTitle>
@@ -86,11 +86,11 @@ export default function DoctorBeds() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Bed Number</TableHead>
-                <TableHead>Ward</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="whitespace-nowrap">Bed Number</TableHead>
+                <TableHead className="whitespace-nowrap">Ward</TableHead>
+                <TableHead className="whitespace-nowrap">Type</TableHead>
+                <TableHead className="whitespace-nowrap">Status</TableHead>
+                <TableHead className="whitespace-nowrap">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

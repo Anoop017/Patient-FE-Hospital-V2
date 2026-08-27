@@ -261,18 +261,18 @@ export default function PatientAppointments() {
             Schedule visits with available specialists and manage your appointment calendar.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={fetchData}
             disabled={refreshing}
-            className="flex items-center gap-1.5"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             {refreshing ? "Refreshing..." : "Refresh"}
           </Button>
-          <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
+          <Button onClick={() => { resetForm(); setDialogOpen(true); }} className="flex-1 sm:flex-initial">
             <Plus className="mr-2 h-4 w-4" />
             Book Appointment
           </Button>
@@ -280,10 +280,10 @@ export default function PatientAppointments() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center space-x-1 bg-muted/60 p-1 rounded-lg w-fit">
+      <div className="flex items-center space-x-1 bg-muted/60 p-1 rounded-lg w-full sm:w-fit overflow-x-auto no-scrollbar">
         <button
           onClick={() => setStatusFilter("all")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
             statusFilter === "all"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
@@ -293,7 +293,7 @@ export default function PatientAppointments() {
         </button>
         <button
           onClick={() => setStatusFilter("scheduled")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
             statusFilter === "scheduled"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
@@ -303,7 +303,7 @@ export default function PatientAppointments() {
         </button>
         <button
           onClick={() => setStatusFilter("completed")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
             statusFilter === "completed"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
@@ -313,7 +313,7 @@ export default function PatientAppointments() {
         </button>
         <button
           onClick={() => setStatusFilter("cancelled")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
             statusFilter === "cancelled"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
@@ -329,12 +329,12 @@ export default function PatientAppointments() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date & Time</TableHead>
-                <TableHead>Doctor</TableHead>
-                <TableHead>Specialization</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="whitespace-nowrap">Date & Time</TableHead>
+                <TableHead className="whitespace-nowrap">Doctor</TableHead>
+                <TableHead className="whitespace-nowrap">Specialization</TableHead>
+                <TableHead className="whitespace-nowrap">Reason</TableHead>
+                <TableHead className="whitespace-nowrap">Status</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -460,7 +460,7 @@ export default function PatientAppointments() {
                 {availableSlots.length === 0 && !loadingSlots ? (
                   <p className="text-xs text-muted-foreground">No time slots available for the selected day. Please try another date.</p>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto p-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto p-1 touch-scroll">
                     {availableSlots.map((slot) => (
                       <button
                         key={slot.time}

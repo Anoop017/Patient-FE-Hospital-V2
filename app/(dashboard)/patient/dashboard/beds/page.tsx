@@ -107,7 +107,7 @@ export default function PatientBedAvailability() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Hospital Beds</CardTitle>
@@ -141,10 +141,10 @@ export default function PatientBedAvailability() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center space-x-1 bg-muted/60 p-1 rounded-lg w-fit">
+      <div className="flex items-center space-x-1 bg-muted/60 p-1 rounded-lg w-full sm:w-fit overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab("beds")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
             activeTab === "beds"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
@@ -154,7 +154,7 @@ export default function PatientBedAvailability() {
         </button>
         <button
           onClick={() => setActiveTab("admissions")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
             activeTab === "admissions"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"

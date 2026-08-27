@@ -67,10 +67,10 @@ export default function DoctorPatients() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Blood Group</TableHead>
-                <TableHead>Total Visits</TableHead>
-                <TableHead>Last Visit</TableHead>
+                <TableHead className="whitespace-nowrap">Name</TableHead>
+                <TableHead className="whitespace-nowrap">Blood Group</TableHead>
+                <TableHead className="whitespace-nowrap">Total Visits</TableHead>
+                <TableHead className="whitespace-nowrap">Last Visit</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

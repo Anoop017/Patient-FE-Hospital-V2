@@ -96,10 +96,10 @@ export default function PatientLabTests() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center space-x-1 bg-muted/60 p-1 rounded-lg w-fit">
+      <div className="flex items-center space-x-1 bg-muted/60 p-1 rounded-lg w-full sm:w-fit overflow-x-auto no-scrollbar">
         <button
           onClick={() => setStatusFilter("all")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
             statusFilter === "all"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
@@ -109,7 +109,7 @@ export default function PatientLabTests() {
         </button>
         <button
           onClick={() => setStatusFilter("completed")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
             statusFilter === "completed"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
@@ -119,13 +119,13 @@ export default function PatientLabTests() {
         </button>
         <button
           onClick={() => setStatusFilter("pending")}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+          className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
             statusFilter === "pending"
               ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Pending ({tests.filter((t) => t.status?.toLowerCase() === "pending" || t.status?.toLowerCase() === "in_progress").length})
+          Pending ({tests.filter((t) => t.status?.toLowerCase() === "pending").length})
         </button>
       </div>
 
@@ -134,17 +134,18 @@ export default function PatientLabTests() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Test Date</TableHead>
-                <TableHead>Test Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Result / Findings</TableHead>
-                <TableHead>Ordered By</TableHead>
+                <TableHead className="whitespace-nowrap">Date</TableHead>
+                <TableHead className="whitespace-nowrap">Test Name</TableHead>
+                <TableHead className="whitespace-nowrap">Category</TableHead>
+                <TableHead className="whitespace-nowrap">Doctor</TableHead>
+                <TableHead className="whitespace-nowrap">Status</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredTests.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
                     <FlaskConical className="mx-auto h-8 w-8 mb-2 opacity-40" />
                     <p className="font-medium">No lab tests found</p>
                     <p className="text-xs">Ordered laboratory test reports will appear here.</p>

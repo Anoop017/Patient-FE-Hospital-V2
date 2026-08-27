@@ -50,11 +50,11 @@ export default function StaffAppointments() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Patient</TableHead>
-                <TableHead>Doctor</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="whitespace-nowrap">Date</TableHead>
+                <TableHead className="whitespace-nowrap">Patient</TableHead>
+                <TableHead className="whitespace-nowrap">Doctor</TableHead>
+                <TableHead className="whitespace-nowrap">Reason</TableHead>
+                <TableHead className="whitespace-nowrap">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

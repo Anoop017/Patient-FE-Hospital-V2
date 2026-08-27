@@ -58,12 +58,12 @@ export default function StaffAdmissions() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Patient</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Doctor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="whitespace-nowrap">Date</TableHead>
+                <TableHead className="whitespace-nowrap">Patient</TableHead>
+                <TableHead className="whitespace-nowrap">Reason</TableHead>
+                <TableHead className="whitespace-nowrap">Doctor</TableHead>
+                <TableHead className="whitespace-nowrap">Status</TableHead>
+                <TableHead className="whitespace-nowrap">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

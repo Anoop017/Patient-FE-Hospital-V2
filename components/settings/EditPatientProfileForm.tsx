@@ -208,7 +208,7 @@ export function EditPatientProfileForm({ onUpdated }: { onUpdated?: () => void }
               <ShieldCheck className="h-4 w-4 text-primary" />
               Account Credentials & Identity
             </h4>
-            <div className="grid gap-4 sm:grid-cols-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
               <div>
                 <span className="text-xs text-muted-foreground block">Full Name</span>
                 <span className="font-semibold text-foreground">{fullName}</span>
@@ -233,7 +233,7 @@ export function EditPatientProfileForm({ onUpdated }: { onUpdated?: () => void }
           </div>
 
           {/* Editable Patient Demographics & Health Profile */}
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {/* Date of Birth */}
             <div className="space-y-2">
               <Label htmlFor="dateOfBirth" className="flex items-center gap-1.5">
@@ -302,11 +302,11 @@ export function EditPatientProfileForm({ onUpdated }: { onUpdated?: () => void }
             />
           </div>
 
-          {/* Medical Background / Personal Notes */}
+          {/* Medical Notes */}
           <div className="space-y-2">
             <Label htmlFor="medicalNotes" className="flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-              Personal Medical Notes & Background
+              Personal Health & Allergy Notes
             </Label>
             <Textarea
               id="medicalNotes"
@@ -321,17 +321,18 @@ export function EditPatientProfileForm({ onUpdated }: { onUpdated?: () => void }
           </div>
         </CardContent>
 
-        <CardFooter className="flex items-center justify-between border-t border-border pt-4">
+        <CardFooter className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border pt-4">
           <Button
             type="button"
             variant="outline"
             onClick={handleReset}
             disabled={saving}
+            className="w-full sm:w-auto"
           >
             Reset Changes
           </Button>
 
-          <Button type="submit" disabled={saving} className="font-semibold">
+          <Button type="submit" disabled={saving} className="font-semibold w-full sm:w-auto">
             {saving ? (
               <span className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4 animate-spin" />

@@ -39,10 +39,10 @@ export default function StaffDoctors() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Specialization</TableHead>
-                <TableHead>License Number</TableHead>
+                <TableHead className="whitespace-nowrap">Name</TableHead>
+                <TableHead className="whitespace-nowrap">Email</TableHead>
+                <TableHead className="whitespace-nowrap">Specialization</TableHead>
+                <TableHead className="whitespace-nowrap">License Number</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

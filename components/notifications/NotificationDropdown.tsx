@@ -197,7 +197,7 @@ export function NotificationDropdown() {
 
       {/* Notifications Popover Card */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-84 sm:w-96 rounded-xl border border-border bg-background shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-sm rounded-xl border border-border bg-background shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-4 py-3 bg-muted/30">
             <div className="flex items-center gap-2">

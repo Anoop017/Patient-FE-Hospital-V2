@@ -58,17 +58,17 @@ export default function PatientMedicalRecords() {
           <h1 className="text-3xl font-bold tracking-tight">My Medical Records</h1>
           <p className="text-muted-foreground">View your medical diagnosis history, doctor notes, and treatment plans.</p>
         </div>
-        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-          <div className="relative w-full sm:w-64">
+        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search diagnosis or note..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 text-sm h-9"
+              className="pl-8 text-sm h-9 w-full"
             />
           </div>
-          <Button type="submit" size="sm" variant="outline">
+          <Button type="submit" size="sm" variant="outline" className="shrink-0">
             Search
           </Button>
         </form>
@@ -79,11 +79,11 @@ export default function PatientMedicalRecords() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Diagnosis</TableHead>
-                <TableHead>Treatment</TableHead>
-                <TableHead>Doctor</TableHead>
-                <TableHead>Clinical Notes</TableHead>
+                <TableHead className="whitespace-nowrap">Date</TableHead>
+                <TableHead className="whitespace-nowrap">Diagnosis</TableHead>
+                <TableHead className="whitespace-nowrap">Treatment</TableHead>
+                <TableHead className="whitespace-nowrap">Doctor</TableHead>
+                <TableHead className="whitespace-nowrap">Clinical Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

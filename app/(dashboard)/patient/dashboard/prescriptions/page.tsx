@@ -58,17 +58,17 @@ export default function PatientPrescriptions() {
           <h1 className="text-3xl font-bold tracking-tight">My Prescriptions</h1>
           <p className="text-muted-foreground">View all medications and prescriptions issued to you by doctors.</p>
         </div>
-        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-          <div className="relative w-full sm:w-64">
+        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search medication..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 text-sm h-9"
+              className="pl-8 text-sm h-9 w-full"
             />
           </div>
-          <Button type="submit" size="sm" variant="outline">
+          <Button type="submit" size="sm" variant="outline" className="shrink-0">
             Search
           </Button>
         </form>
@@ -79,12 +79,12 @@ export default function PatientPrescriptions() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Medication</TableHead>
-                <TableHead>Dosage</TableHead>
-                <TableHead>Frequency</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Prescribed By</TableHead>
+                <TableHead className="whitespace-nowrap">Date</TableHead>
+                <TableHead className="whitespace-nowrap">Medication</TableHead>
+                <TableHead className="whitespace-nowrap">Dosage</TableHead>
+                <TableHead className="whitespace-nowrap">Frequency</TableHead>
+                <TableHead className="whitespace-nowrap">Duration</TableHead>
+                <TableHead className="whitespace-nowrap">Prescribed By</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

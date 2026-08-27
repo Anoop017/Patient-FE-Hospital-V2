@@ -147,7 +147,7 @@ export default function PatientDashboard() {
 
       {/* Outstanding Balance Banner if applicable */}
       {totalDue > 0 && (
-        <div className="flex items-center justify-between p-4 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-300 text-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-300 text-sm gap-3">
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
             <div>
@@ -156,7 +156,7 @@ export default function PatientDashboard() {
               <strong>${Number(totalDue).toFixed(2)}</strong>.
             </div>
           </div>
-          <Link href="/patient/dashboard/billing" className="text-xs font-bold underline hover:opacity-80 flex items-center gap-1 shrink-0 ml-2">
+          <Link href="/patient/dashboard/billing" className="text-xs font-bold underline hover:opacity-80 flex items-center gap-1 shrink-0 self-end sm:self-center">
             Settle Invoices <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -164,7 +164,7 @@ export default function PatientDashboard() {
 
       {/* Active Inpatient Admission Banner if currently admitted */}
       {summary?.activeAdmission && (
-        <div className="flex items-center justify-between p-4 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-900 dark:text-blue-300 text-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-900 dark:text-blue-300 text-sm gap-3">
           <div className="flex items-center gap-3">
             <BedDouble className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
             <div>
@@ -174,14 +174,14 @@ export default function PatientDashboard() {
               {summary.activeAdmission.admissionDate ? new Date(summary.activeAdmission.admissionDate).toLocaleDateString() : "recent"}.
             </div>
           </div>
-          <Link href="/patient/dashboard/beds" className="text-xs font-semibold underline hover:opacity-80">
+          <Link href="/patient/dashboard/beds" className="text-xs font-semibold underline hover:opacity-80 shrink-0 self-end sm:self-center">
             View Details
           </Link>
         </div>
       )}
 
       {/* Key Metric Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Upcoming Appointments</CardTitle>
@@ -230,7 +230,7 @@ export default function PatientDashboard() {
       </div>
 
       {/* Next Appointment Hero Card + Recent Lab Results Grid */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* Next Appointment Card */}
         <Card className="border-l-4 border-l-primary flex flex-col justify-between">
           <CardHeader>
@@ -249,8 +249,8 @@ export default function PatientDashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             {summary?.nextAppointment ? (
-              <div className="rounded-lg bg-muted/40 p-4 space-y-3">
-                <div className="flex items-center justify-between">
+              <div className="rounded-lg bg-muted/40 p-3.5 sm:p-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div className="space-y-1">
                     <p className="font-bold text-base text-foreground">
                       {summary.nextAppointment.doctorName || "Doctor Appointment"}
@@ -259,7 +259,7 @@ export default function PatientDashboard() {
                       {summary.nextAppointment.specialization || "General Medicine"}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="self-start sm:self-auto">
                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-background px-2.5 py-1 rounded-md border border-border">
                       <Clock className="h-3.5 w-3.5 text-primary" />
                       {summary.nextAppointment.appointmentDate
@@ -343,13 +343,13 @@ export default function PatientDashboard() {
 
       {/* Recent Appointments Table */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <CardTitle>Recent Appointments</CardTitle>
             <CardDescription>Your latest scheduled and past visits.</CardDescription>
           </div>
           <Link href="/patient/dashboard/appointments">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               All Appointments
             </Button>
           </Link>
@@ -360,34 +360,38 @@ export default function PatientDashboard() {
               No appointments found. Book one from the Appointments page.
             </p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {appointments.slice(0, 5).map((appt) => (
-                <div key={appt.id} className="flex items-center gap-4">
-                  <div className="w-2 h-2 rounded-full bg-primary" />
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {appt.reason || "Medical Visit"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {appt.doctor?.user ? `Dr. ${appt.doctor.user.firstName} ${appt.doctor.user.lastName}` : (appt.doctorName || "Attending Doctor")}{" "}
-                      {appt.doctor?.specialization ? `— ${appt.doctor.specialization}` : ""}
-                    </p>
+                <div key={appt.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg bg-muted/30 sm:bg-muted/10 border border-border/40">
+                  <div className="flex items-start sm:items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-primary mt-1.5 sm:mt-0 shrink-0" />
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        {appt.reason || "Medical Visit"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {appt.doctor?.user ? `Dr. ${appt.doctor.user.firstName} ${appt.doctor.user.lastName}` : (appt.doctorName || "Attending Doctor")}{" "}
+                        {appt.doctor?.specialization ? `— ${appt.doctor.specialization}` : ""}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {appt.appointmentDate ? new Date(appt.appointmentDate).toLocaleDateString() : "—"}
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pl-5 sm:pl-0 text-xs">
+                    <span className="text-muted-foreground">
+                      {appt.appointmentDate ? new Date(appt.appointmentDate).toLocaleDateString() : "—"}
+                    </span>
+                    <Badge
+                      variant={
+                        appt.status?.toLowerCase() === "completed"
+                          ? "success"
+                          : appt.status?.toLowerCase() === "cancelled"
+                          ? "destructive"
+                          : "default"
+                      }
+                      className="capitalize text-[11px]"
+                    >
+                      {appt.status || "Scheduled"}
+                    </Badge>
                   </div>
-                  <Badge
-                    variant={
-                      appt.status?.toLowerCase() === "completed"
-                        ? "success"
-                        : appt.status?.toLowerCase() === "cancelled"
-                        ? "destructive"
-                        : "default"
-                    }
-                    className="capitalize text-xs"
-                  >
-                    {appt.status || "Scheduled"}
-                  </Badge>
                 </div>
               ))}
             </div>

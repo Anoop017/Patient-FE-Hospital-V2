@@ -124,12 +124,12 @@ export default function DoctorMedicalRecords() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Medical Records</h1>
           <p className="text-muted-foreground">Create and manage patient medical records.</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> New Record
         </Button>
       </div>
@@ -139,12 +139,12 @@ export default function DoctorMedicalRecords() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Patient</TableHead>
-                <TableHead>Diagnosis</TableHead>
-                <TableHead>Symptoms</TableHead>
-                <TableHead>Treatment</TableHead>
-                <TableHead>Notes</TableHead>
+                <TableHead className="whitespace-nowrap">Date</TableHead>
+                <TableHead className="whitespace-nowrap">Patient</TableHead>
+                <TableHead className="whitespace-nowrap">Diagnosis</TableHead>
+                <TableHead className="whitespace-nowrap">Symptoms</TableHead>
+                <TableHead className="whitespace-nowrap">Treatment</TableHead>
+                <TableHead className="whitespace-nowrap">Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

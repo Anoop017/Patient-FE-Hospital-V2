@@ -39,10 +39,10 @@ export default function StaffPatients() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Blood Group</TableHead>
-                <TableHead>Date of Birth</TableHead>
+                <TableHead className="whitespace-nowrap">Name</TableHead>
+                <TableHead className="whitespace-nowrap">Email</TableHead>
+                <TableHead className="whitespace-nowrap">Blood Group</TableHead>
+                <TableHead className="whitespace-nowrap">Date of Birth</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

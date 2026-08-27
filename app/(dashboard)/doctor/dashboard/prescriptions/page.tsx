@@ -133,12 +133,12 @@ export default function DoctorPrescriptions() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Prescriptions</h1>
           <p className="text-muted-foreground">Create and manage patient prescriptions.</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> New Prescription
         </Button>
       </div>
@@ -148,12 +148,12 @@ export default function DoctorPrescriptions() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Patient</TableHead>
-                <TableHead>Medication</TableHead>
-                <TableHead>Dosage</TableHead>
-                <TableHead>Frequency</TableHead>
-                <TableHead>Duration</TableHead>
+                <TableHead className="whitespace-nowrap">Date</TableHead>
+                <TableHead className="whitespace-nowrap">Patient</TableHead>
+                <TableHead className="whitespace-nowrap">Medication</TableHead>
+                <TableHead className="whitespace-nowrap">Dosage</TableHead>
+                <TableHead className="whitespace-nowrap">Frequency</TableHead>
+                <TableHead className="whitespace-nowrap">Duration</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

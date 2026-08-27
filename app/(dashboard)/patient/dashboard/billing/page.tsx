@@ -382,17 +382,19 @@ export default function PatientBillingPage() {
 
       {/* Overdue Alert Banner if applicable */}
       {metrics.overdueCount > 0 && (
-        <div className="flex items-center gap-3 p-4 rounded-lg border border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400">
-          <AlertCircle className="h-5 w-5 shrink-0" />
-          <div className="flex-1 text-sm">
-            <span className="font-semibold">Payment Alert:</span> You have{" "}
-            <span className="font-bold">{metrics.overdueCount}</span> overdue invoice{metrics.overdueCount > 1 ? "s" : ""}. Please settle your balance promptly.
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-lg border border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <div className="text-sm">
+              <span className="font-semibold">Payment Alert:</span> You have{" "}
+              <span className="font-bold">{metrics.overdueCount}</span> overdue invoice{metrics.overdueCount > 1 ? "s" : ""}. Please settle your balance promptly.
+            </div>
           </div>
           <Button
             size="sm"
             variant="destructive"
             onClick={() => setActiveTab("unpaid")}
-            className="shrink-0"
+            className="shrink-0 self-end sm:self-center"
           >
             View Overdue Bills
           </Button>
@@ -400,7 +402,7 @@ export default function PatientBillingPage() {
       )}
 
       {/* Financial Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Outstanding Balance */}
         <Card className="border-l-4 border-l-amber-500 relative overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -469,10 +471,10 @@ export default function PatientBillingPage() {
       {/* Main Tabs and Actions */}
       <div className="flex flex-col space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border pb-4">
-          <div className="flex items-center space-x-1 bg-muted/60 p-1 rounded-lg">
+          <div className="flex items-center space-x-1 bg-muted/60 p-1 rounded-lg w-full sm:w-fit overflow-x-auto no-scrollbar">
             <button
               onClick={() => setActiveTab("all")}
-              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
                 activeTab === "all"
                   ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -482,7 +484,7 @@ export default function PatientBillingPage() {
             </button>
             <button
               onClick={() => setActiveTab("unpaid")}
-              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
                 activeTab === "unpaid"
                   ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -492,7 +494,7 @@ export default function PatientBillingPage() {
             </button>
             <button
               onClick={() => setActiveTab("paid")}
-              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
                 activeTab === "paid"
                   ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -502,7 +504,7 @@ export default function PatientBillingPage() {
             </button>
             <button
               onClick={() => setActiveTab("history")}
-              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
                 activeTab === "history"
                   ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -532,12 +534,12 @@ export default function PatientBillingPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Invoice # / Ref</TableHead>
-                    <TableHead>Issued Date</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Total Amount</TableHead>
-                    <TableHead>Paid Amount</TableHead>
-                    <TableHead>Remaining</TableHead>
+                    <TableHead className="whitespace-nowrap">Invoice # / Ref</TableHead>
+                    <TableHead className="whitespace-nowrap">Issued Date</TableHead>
+                    <TableHead className="whitespace-nowrap">Due Date</TableHead>
+                    <TableHead className="whitespace-nowrap">Total Amount</TableHead>
+                    <TableHead className="whitespace-nowrap">Paid Amount</TableHead>
+                    <TableHead className="whitespace-nowrap">Remaining</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
