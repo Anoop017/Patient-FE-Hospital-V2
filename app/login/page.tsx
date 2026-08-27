@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Hospital, Eye, EyeOff } from "lucide-react";
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Hospital, Eye, EyeOff, KeyRound, CheckCircle2, AlertCircle, Loader2, Mail } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -20,6 +21,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Forgot password state
+  const [isForgotOpen, setIsForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState("");
+  const [forgotError, setForgotError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,9 +55,35 @@ export default function LoginPage() {
         router.push("/patient/dashboard");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Login failed. Please check your credentials.");
+      setError(err.response?.data?.message || err.message || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) return;
+
+    setForgotLoading(true);
+    setForgotError("");
+    setForgotMessage("");
+
+    try {
+      const response = await api.post("/auth/forgot-password", { email: forgotEmail });
+      const message =
+        response.data?.message ||
+        (response as any).message ||
+        "If this email address is registered, a password reset link has been sent.";
+      setForgotMessage(message);
+    } catch (err: any) {
+      setForgotError(
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to send password reset email. Please try again."
+      );
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -77,7 +111,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               {error && (
-                <div className="rounded-md bg-red-50 p-4 text-sm text-red-500">
+                <div className="rounded-md bg-destructive/15 p-4 text-sm text-destructive">
                   {error}
                 </div>
               )}
@@ -95,9 +129,18 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Link href="#" className="text-sm font-medium text-foreground hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotEmail(email);
+                      setForgotError("");
+                      setForgotMessage("");
+                      setIsForgotOpen(true);
+                    }}
+                    className="text-sm font-medium text-foreground/80 hover:text-foreground hover:underline cursor-pointer"
+                  >
                     Forgot password?
-                  </Link>
+                  </button>
                 </div>
                 <div className="relative">
                   <Input 
@@ -132,6 +175,92 @@ export default function LoginPage() {
           </form>
         </Card>
       </div>
+
+      {/* Forgot Password Modal Dialog */}
+      <Dialog open={isForgotOpen} onOpenChange={setIsForgotOpen}>
+        <div className="space-y-4">
+          <DialogHeader>
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <KeyRound className="h-6 w-6" />
+            </div>
+            <DialogTitle className="text-center text-xl font-bold">
+              Forgot your password?
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm">
+              Enter the email address associated with your account and we&apos;ll send you a password reset link.
+            </DialogDescription>
+          </DialogHeader>
+
+          {forgotMessage ? (
+            <div className="space-y-4 py-2">
+              <div className="flex items-start gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-300">
+                <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
+                <div className="text-sm leading-relaxed">
+                  <p className="font-semibold text-emerald-800 dark:text-emerald-200 mb-1">Check your email</p>
+                  <p>{forgotMessage}</p>
+                </div>
+              </div>
+              <DialogFooter className="sm:justify-center pt-2">
+                <Button
+                  type="button"
+                  className="w-full sm:w-auto min-w-[140px]"
+                  onClick={() => setIsForgotOpen(false)}
+                >
+                  Back to Sign In
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              {forgotError && (
+                <div className="flex items-center gap-2 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{forgotError}</span>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">Email address</Label>
+                <div className="relative">
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="name@example.com"
+                    required
+                    autoFocus
+                    className="pl-9"
+                  />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                </div>
+              </div>
+              <DialogFooter className="gap-2 sm:gap-0 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsForgotOpen(false)}
+                  disabled={forgotLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={forgotLoading || !forgotEmail.trim()}
+                >
+                  {forgotLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending link...
+                    </>
+                  ) : (
+                    "Send Reset Link"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </div>
+      </Dialog>
     </div>
   );
 }
