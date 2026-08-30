@@ -3,11 +3,22 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Activity } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { DoctorVitalsLiveMonitor } from "@/components/vitals/DoctorVitalsLiveMonitor";
 
 export default function DoctorPatients() {
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -59,7 +70,7 @@ export default function DoctorPatients() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">My Patients</h1>
-        <p className="text-muted-foreground">Patients extracted from your appointment history.</p>
+        <p className="text-muted-foreground">Clinical records and real-time vital telemetry for your patients.</p>
       </div>
 
       <Card>
@@ -71,12 +82,13 @@ export default function DoctorPatients() {
                 <TableHead className="whitespace-nowrap">Blood Group</TableHead>
                 <TableHead className="whitespace-nowrap">Total Visits</TableHead>
                 <TableHead className="whitespace-nowrap">Last Visit</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Telemetry</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {patients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     No patients found.
                   </TableCell>
                 </TableRow>
@@ -86,9 +98,19 @@ export default function DoctorPatients() {
                     <TableCell className="font-medium">
                       {patient.user?.firstName} {patient.user?.lastName}
                     </TableCell>
-                    <TableCell>{patient.bloodGroup || "—"}</TableCell>
+                    <TableCell>{patient.bloodGroup || "-"}</TableCell>
                     <TableCell>{patient.totalVisits}</TableCell>
                     <TableCell>{new Date(patient.lastVisit).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedPatient(patient)}
+                        className="h-8 text-xs flex items-center gap-1.5 ml-auto border-teal-500/30 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10"
+                      >
+                        <Activity className="size-3.5" /> Live Vitals
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -96,6 +118,26 @@ export default function DoctorPatients() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Live Vitals Dialog for Selected Patient */}
+      <Dialog open={!!selectedPatient} onOpenChange={(open) => !open && setSelectedPatient(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Activity className="size-5 text-teal-500" />
+              Patient Telemetry & Vitals
+            </DialogTitle>
+            <DialogDescription>
+              Live physiological telemetry for {selectedPatient?.user?.firstName} {selectedPatient?.user?.lastName} (ID #{selectedPatient?.id}).
+            </DialogDescription>
+          </DialogHeader>
+          {selectedPatient && (
+            <div className="mt-2">
+              <DoctorVitalsLiveMonitor patientId={selectedPatient.id} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

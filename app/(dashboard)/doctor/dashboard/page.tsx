@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Users, FileText, ClipboardList } from "lucide-react";
+import { Calendar, Users, FileText, ClipboardList, Radio } from "lucide-react";
+import { DoctorVitalsLiveMonitor } from "@/components/vitals/DoctorVitalsLiveMonitor";
 
 export default function DoctorDashboard() {
   const [summary, setSummary] = useState<any>(null);
@@ -45,7 +46,7 @@ export default function DoctorDashboard() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Doctor Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome back{profile?.user?.firstName ? `, Dr. ${profile.user.firstName}` : ""}. Here is your daily overview.
+          Welcome back{profile?.user?.firstName ? `, Dr. ${profile.user.firstName}` : ""}. Here is your real-time clinical overview.
         </p>
       </div>
 
@@ -93,6 +94,18 @@ export default function DoctorDashboard() {
             <p className="text-xs text-muted-foreground">Your field</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Real-Time Patient Vitals & ICU Telemetry Section */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Radio className="size-4 text-rose-500 animate-pulse" />
+            <h2 className="text-base font-bold tracking-tight">Real-Time Patient Vitals & ICU Telemetry</h2>
+          </div>
+          <span className="text-xs text-muted-foreground font-mono">Stream: Live WebSocket (Port 4000)</span>
+        </div>
+        <DoctorVitalsLiveMonitor />
       </div>
 
       {/* Today's Schedule */}

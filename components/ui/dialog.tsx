@@ -19,11 +19,15 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
         onClick={() => onOpenChange(false)} 
         aria-hidden="true"
       />
-      <div className="relative z-50 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl border border-border bg-background p-4 sm:p-6 shadow-2xl animate-in fade-in-0 zoom-in-95 touch-scroll my-auto">
+      <div className="relative z-50 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl border border-border bg-background p-4 sm:p-6 shadow-2xl animate-in fade-in-0 zoom-in-95 touch-scroll my-auto">
         {children}
       </div>
     </div>
   )
+}
+
+export function DialogContent({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("space-y-4", className)} {...props}>{children}</div>
 }
 
 export function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

@@ -5,14 +5,17 @@ import { api } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { FlaskConical, RefreshCw } from "lucide-react";
+import { FlaskConical, RefreshCw, FileDown, Eye, FileText } from "lucide-react";
+import { downloadReport } from "@/lib/reports";
 
 export default function PatientLabTests() {
   const [tests, setTests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedTest, setSelectedTest] = useState<any | null>(null);
 
   useEffect(() => {
     fetchTests();
@@ -154,22 +157,39 @@ export default function PatientLabTests() {
               ) : (
                 filteredTests.map((test) => (
                   <TableRow key={test.id}>
-                    <TableCell>
+                    <TableCell className="text-sm">
                       {test.testDate
                         ? new Date(test.testDate).toLocaleDateString()
                         : (test.createdAt ? new Date(test.createdAt).toLocaleDateString() : "—")}
                     </TableCell>
                     <TableCell className="font-medium">{test.testName || test.name || "—"}</TableCell>
-                    <TableCell>{getStatusBadge(test.status)}</TableCell>
-                    <TableCell className="max-w-[240px] truncate">
-                      {test.result ? (
-                        <span className="font-medium text-foreground">{test.result}</span>
-                      ) : (
-                        <span className="text-muted-foreground text-xs italic">Awaiting lab results</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
+                    <TableCell className="text-sm">{test.testType || test.category || "General"}</TableCell>
+                    <TableCell className="text-sm">
                       {test.doctor?.user ? `Dr. ${test.doctor.user.firstName} ${test.doctor.user.lastName}` : (test.doctorName || "—")}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(test.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadReport("lab", test.id)}
+                          title="Download Lab Report PDF"
+                          className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30"
+                        >
+                          <FileDown className="h-3.5 w-3.5" />
+                          PDF
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedTest(test)}
+                          className="h-8 text-xs flex items-center gap-1"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          Details
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -178,6 +198,90 @@ export default function PatientLabTests() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Lab Test Details Dialog */}
+      <Dialog open={!!selectedTest} onOpenChange={(open) => !open && setSelectedTest(null)}>
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              <FlaskConical className="h-5 w-5 text-primary" />
+              {selectedTest?.testName || selectedTest?.name || "Lab Test Details"}
+            </DialogTitle>
+            {selectedTest && getStatusBadge(selectedTest.status)}
+          </div>
+          <DialogDescription>
+            Clinical lab order and results summary.
+          </DialogDescription>
+        </DialogHeader>
+
+        {selectedTest && (
+          <div className="space-y-4 pt-2 text-sm">
+            <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-muted/40 text-xs">
+              <div>
+                <span className="text-muted-foreground block">Order Date:</span>
+                <span className="font-semibold text-foreground">
+                  {selectedTest.testDate ? new Date(selectedTest.testDate).toLocaleDateString() : (selectedTest.createdAt ? new Date(selectedTest.createdAt).toLocaleDateString() : "—")}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">Category / Type:</span>
+                <span className="font-semibold text-foreground">{selectedTest.testType || selectedTest.category || "General Laboratory"}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">Ordered By:</span>
+                <span className="font-semibold text-foreground">
+                  {selectedTest.doctor?.user ? `Dr. ${selectedTest.doctor.user.firstName} ${selectedTest.doctor.user.lastName}` : (selectedTest.doctorName || "Staff")}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">Lab Test ID:</span>
+                <span className="font-mono font-semibold text-foreground">#{selectedTest.id}</span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Findings & Clinical Results</span>
+              <div className="p-3 rounded-md border border-border bg-card">
+                {selectedTest.result ? (
+                  <p className="whitespace-pre-wrap text-foreground font-mono text-xs">{selectedTest.result}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">Test sample is being processed by the laboratory. Official findings will be posted upon completion.</p>
+                )}
+              </div>
+            </div>
+
+            {selectedTest.notes && (
+              <div className="space-y-1">
+                <span className="text-xs font-semibold text-muted-foreground">Clinical Notes:</span>
+                <p className="text-xs text-muted-foreground">{selectedTest.notes}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter className="mt-4 sm:justify-between">
+          {selectedTest && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => downloadReport("lab", selectedTest.id)}
+              className="flex items-center gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+            >
+              <FileDown className="h-4 w-4" />
+              Download Lab Report PDF
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedTest(null)}
+          >
+            Close
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </div>
   );
 }

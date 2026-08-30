@@ -24,8 +24,11 @@ import {
   Building2,
   RefreshCw,
   Wallet,
-  ShieldCheck
+  ShieldCheck,
+  FileDown,
+  Download
 } from "lucide-react";
+import { downloadReport } from "@/lib/reports";
 
 interface Payment {
   id: string | number;
@@ -605,6 +608,16 @@ export default function PatientBillingPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                onClick={() => downloadReport("billing", bill.id)}
+                                title="Download PDF Invoice"
+                                className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30"
+                              >
+                                <FileDown className="h-3.5 w-3.5" />
+                                PDF
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => openInvoiceModal(bill)}
                                 className="h-8 text-xs"
                               >
@@ -978,17 +991,29 @@ export default function PatientBillingPage() {
           </div>
         )}
 
-        <DialogFooter className="mt-4 sm:justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => window.print()}
-            className="flex items-center gap-1.5"
-          >
-            <Printer className="h-4 w-4" />
-            Print / Save Receipt
-          </Button>
+        <DialogFooter className="mt-4 sm:justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => selectedBillForInvoice && downloadReport("billing", selectedBillForInvoice.id)}
+              className="flex items-center gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+            >
+              <FileDown className="h-4 w-4" />
+              Download PDF Invoice
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5"
+            >
+              <Printer className="h-4 w-4" />
+              Print
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             <Button
               type="button"

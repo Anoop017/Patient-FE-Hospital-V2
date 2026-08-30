@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, FileDown } from "lucide-react";
+import { downloadReport } from "@/lib/reports";
 
 export default function DoctorLabTests() {
   const [tests, setTests] = useState<any[]>([]);
@@ -157,11 +158,12 @@ export default function DoctorLabTests() {
                 <TableHead className="whitespace-nowrap">Test Type</TableHead>
                 <TableHead className="whitespace-nowrap">Status</TableHead>
                 <TableHead className="whitespace-nowrap">Result</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {tests.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No lab tests found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No lab tests found.</TableCell></TableRow>
               ) : (
                 tests.map((test) => (
                   <TableRow key={test.id}>
@@ -171,6 +173,18 @@ export default function DoctorLabTests() {
                     <TableCell>{test.testType || "General"}</TableCell>
                     <TableCell>{getStatusBadge(test.status)}</TableCell>
                     <TableCell>{test.result || "Pending"}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => downloadReport("lab", test.id)}
+                        title="Download Lab Report PDF"
+                        className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30"
+                      >
+                        <FileDown className="h-3.5 w-3.5" />
+                        PDF
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}

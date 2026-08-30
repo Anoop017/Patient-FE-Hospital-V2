@@ -6,12 +6,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, FileDown, Activity } from "lucide-react";
+import { downloadReport } from "@/lib/reports";
+import { DoctorVitalsLiveMonitor } from "@/components/vitals/DoctorVitalsLiveMonitor";
 
 export default function DoctorAdmissions() {
   const [admissions, setAdmissions] = useState<any[]>([]);
@@ -19,6 +20,7 @@ export default function DoctorAdmissions() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedVitalsAdm, setSelectedVitalsAdm] = useState<any | null>(null);
 
   const [doctorId, setDoctorId] = useState<number | null>(null);
   const [beds, setBeds] = useState<any[]>([]);
@@ -39,37 +41,28 @@ export default function DoctorAdmissions() {
       if (res?.data?.id) {
         setDoctorId(res.data.id);
       }
-    } catch {}
+    } catch {
+      // ignore
+    }
   };
 
   const fetchBeds = async () => {
     try {
       const res = await api.get("/beds").catch(() => null);
-      const data = res?.data;
-      const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
-      setBeds(list);
-      const firstAvailable = list.find((b: any) => b.status?.toLowerCase() === "available");
-      if (firstAvailable) {
-        setBedId(String(firstAvailable.id));
-      } else if (list.length > 0) {
-        setBedId(String(list[0].id));
+      if (res?.data && Array.isArray(res.data)) {
+        setBeds(res.data);
       }
-    } catch {}
+    } catch {
+      // ignore
+    }
   };
 
   const fetchData = async () => {
     try {
-      const res = await api.get("/admissions/me");
-      const list = Array.isArray(res.data) ? res.data : Array.isArray(res.data?.data) ? res.data.data : [];
-      setAdmissions(list);
+      const res = await api.get("/admissions");
+      setAdmissions(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
-      try {
-        const fallbackRes = await api.get("/admissions");
-        const list = Array.isArray(fallbackRes.data) ? fallbackRes.data : Array.isArray(fallbackRes.data?.data) ? fallbackRes.data.data : [];
-        setAdmissions(list);
-      } catch {
-        setAdmissions([]);
-      }
+      console.error("Failed to load admissions", error);
     } finally {
       setLoading(false);
     }
@@ -78,11 +71,11 @@ export default function DoctorAdmissions() {
   const fetchPatients = async () => {
     try {
       const [patRes, apptRes] = await Promise.allSettled([
-        api.get("/patients?take=100"),
+        api.get("/patients"),
         api.get("/appointments/me"),
       ]);
 
-      const map = new Map<string | number, any>();
+      const map = new Map<number | string, any>();
 
       if (patRes.status === "fulfilled") {
         const data = patRes.value.data;
@@ -161,7 +154,7 @@ export default function DoctorAdmissions() {
       case "admitted": return <Badge variant="default">Admitted</Badge>;
       case "discharged": return <Badge variant="success">Discharged</Badge>;
       case "transferred": return <Badge variant="warning">Transferred</Badge>;
-      default: return <Badge variant="outline">{status || "—"}</Badge>;
+      default: return <Badge variant="outline">{status || "-"}</Badge>;
     }
   };
 
@@ -174,7 +167,7 @@ export default function DoctorAdmissions() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admissions</h1>
-          <p className="text-muted-foreground">Manage patient admissions and discharges.</p>
+          <p className="text-muted-foreground">Manage patient admissions, live vital monitoring, and discharges.</p>
         </div>
         <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> Admit Patient
@@ -191,7 +184,7 @@ export default function DoctorAdmissions() {
                 <TableHead className="whitespace-nowrap">Bed / Ward</TableHead>
                 <TableHead className="whitespace-nowrap">Reason</TableHead>
                 <TableHead className="whitespace-nowrap">Status</TableHead>
-                <TableHead className="whitespace-nowrap">Actions</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -201,14 +194,38 @@ export default function DoctorAdmissions() {
                 admissions.map((adm) => (
                   <TableRow key={adm.id}>
                     <TableCell>{new Date(adm.createdAt || adm.admissionDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{adm.patient?.user ? `${adm.patient.user.firstName} ${adm.patient.user.lastName}` : "—"}</TableCell>
-                    <TableCell>{adm.bed ? `Bed ${adm.bed.bedNumber} (${adm.bed.ward?.name || "General"})` : "—"}</TableCell>
-                    <TableCell>{adm.reason || "—"}</TableCell>
+                    <TableCell className="font-medium">{adm.patient?.user ? `${adm.patient.user.firstName} ${adm.patient.user.lastName}` : "-"}</TableCell>
+                    <TableCell>{adm.bed ? `Bed ${adm.bed.bedNumber} (${adm.bed.ward?.name || "General"})` : "-"}</TableCell>
+                    <TableCell>{adm.reason || "-"}</TableCell>
                     <TableCell>{getStatusBadge(adm.status)}</TableCell>
-                    <TableCell>
-                      {adm.status?.toLowerCase() === "admitted" && (
-                        <Button size="sm" variant="outline" onClick={() => handleDischarge(adm.id)}>Discharge</Button>
-                      )}
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedVitalsAdm(adm)}
+                          title="Live ICU Telemetry"
+                          className="h-8 text-xs flex items-center gap-1 border-teal-500/30 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10"
+                        >
+                          <Activity className="h-3.5 w-3.5" />
+                          Vitals
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => downloadReport("discharge", adm.id)}
+                          title="Download Discharge Summary PDF"
+                          className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30"
+                        >
+                          <FileDown className="h-3.5 w-3.5" />
+                          PDF
+                        </Button>
+                        {adm.status?.toLowerCase() === "admitted" && (
+                          <Button size="sm" variant="outline" onClick={() => handleDischarge(adm.id)} className="h-8 text-xs">
+                            Discharge
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -217,6 +234,30 @@ export default function DoctorAdmissions() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Live Vitals Modal for Admitted Patient */}
+      <Dialog open={!!selectedVitalsAdm} onOpenChange={(open) => !open && setSelectedVitalsAdm(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Activity className="size-5 text-teal-500" />
+              Admission Telemetry & Vitals
+            </DialogTitle>
+            <DialogDescription>
+              Live physiological telemetry for admission #{selectedVitalsAdm?.id} (
+              {selectedVitalsAdm?.patient?.user?.firstName} {selectedVitalsAdm?.patient?.user?.lastName}).
+            </DialogDescription>
+          </DialogHeader>
+          {selectedVitalsAdm && (
+            <div className="mt-2">
+              <DoctorVitalsLiveMonitor
+                admissionId={selectedVitalsAdm.id}
+                patientId={selectedVitalsAdm.patientId || selectedVitalsAdm.patient?.id}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogHeader>
@@ -258,7 +299,7 @@ export default function DoctorAdmissions() {
                 <option value="">Select an available bed...</option>
                 {beds.map((b) => (
                   <option key={b.id} value={b.id}>
-                    Bed #{b.bedNumber} — {b.ward?.name || "General Ward"} ({b.status})
+                    Bed #{b.bedNumber} - {b.ward?.name || "General Ward"} ({b.status})
                   </option>
                 ))}
               </Select>

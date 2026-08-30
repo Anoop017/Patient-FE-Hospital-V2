@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { FileDown } from "lucide-react";
+import { downloadReport } from "@/lib/reports";
 
 export default function StaffAdmissions() {
   const [admissions, setAdmissions] = useState<any[]>([]);
@@ -78,9 +80,23 @@ export default function StaffAdmissions() {
                     <TableCell>{adm.doctor?.user ? `Dr. ${adm.doctor.user.firstName} ${adm.doctor.user.lastName}` : "—"}</TableCell>
                     <TableCell>{getStatusBadge(adm.status)}</TableCell>
                     <TableCell>
-                      {adm.status?.toLowerCase() === "admitted" && (
-                        <Button size="sm" variant="outline" onClick={() => handleDischarge(adm.id)}>Discharge</Button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => downloadReport("discharge", adm.id)}
+                          title="Download Discharge Summary PDF"
+                          className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30"
+                        >
+                          <FileDown className="h-3.5 w-3.5" />
+                          PDF
+                        </Button>
+                        {adm.status?.toLowerCase() === "admitted" && (
+                          <Button size="sm" variant="outline" onClick={() => handleDischarge(adm.id)} className="h-8 text-xs">
+                            Discharge
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

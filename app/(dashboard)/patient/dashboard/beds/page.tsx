@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { BedDouble, ClipboardList, RefreshCw } from "lucide-react";
+import { BedDouble, ClipboardList, RefreshCw, FileDown } from "lucide-react";
+import { downloadReport } from "@/lib/reports";
 
 export default function PatientBedAvailability() {
   const [beds, setBeds] = useState<any[]>([]);
@@ -245,17 +246,18 @@ export default function PatientBedAvailability() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Admission Date</TableHead>
-                  <TableHead>Discharge Date</TableHead>
-                  <TableHead>Ward & Bed</TableHead>
-                  <TableHead>Reason / Diagnosis</TableHead>
-                  <TableHead className="text-right">Status</TableHead>
+                  <TableHead className="whitespace-nowrap">Admission Date</TableHead>
+                  <TableHead className="whitespace-nowrap">Discharge Date</TableHead>
+                  <TableHead className="whitespace-nowrap">Ward & Bed</TableHead>
+                  <TableHead className="whitespace-nowrap">Reason / Diagnosis</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {myAdmissions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
                       <BedDouble className="mx-auto h-8 w-8 mb-2 opacity-40" />
                       <p className="font-medium">No inpatient admissions on record</p>
                       <p className="text-xs">Any hospital stays or ward admissions will be recorded here.</p>
@@ -264,17 +266,29 @@ export default function PatientBedAvailability() {
                 ) : (
                   myAdmissions.map((adm) => (
                     <TableRow key={adm.id}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium text-sm">
                         {adm.admissionDate ? new Date(adm.admissionDate).toLocaleDateString() : "—"}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-sm">
                         {adm.dischargeDate ? new Date(adm.dischargeDate).toLocaleDateString() : "Present"}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-sm">
                         {adm.ward?.name || adm.wardName || "General Ward"} • Bed {adm.bed?.bedNumber || adm.bedNumber || "—"}
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate">{adm.reason || adm.diagnosis || "Medical Stay"}</TableCell>
-                      <TableCell className="text-right">{getAdmissionStatusBadge(adm.status)}</TableCell>
+                      <TableCell className="max-w-[200px] truncate text-sm">{adm.reason || adm.diagnosis || "Medical Stay"}</TableCell>
+                      <TableCell>{getAdmissionStatusBadge(adm.status)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => downloadReport("discharge", adm.id)}
+                          title="Download Discharge Summary PDF"
+                          className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30"
+                        >
+                          <FileDown className="h-3.5 w-3.5" />
+                          PDF
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
