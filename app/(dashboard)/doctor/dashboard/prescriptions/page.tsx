@@ -10,7 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, Search, Pill } from "lucide-react";
+import { toast } from "@/components/ui/toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function DoctorPrescriptions() {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
@@ -18,6 +21,7 @@ export default function DoctorPrescriptions() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState("");
 
   const [patientId, setPatientId] = useState("");
   const [medication, setMedication] = useState("");
@@ -119,28 +123,41 @@ export default function DoctorPrescriptions() {
       await api.post("/prescriptions", payload);
       setDialogOpen(false);
       setPatientId(""); setMedication(""); setDosage(""); setFrequency(""); setDuration(""); setNotes("");
+      toast.success("Prescription Issued", `Prescription for ${medication} has been recorded.`);
       fetchData();
     } catch (error: any) {
-      alert(error.response?.data?.message || "Failed to create prescription.");
+      toast.error("Prescription Error", error.response?.data?.message || "Failed to create prescription.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading prescriptions...</div>;
-  }
+  const filteredPrescriptions = prescriptions.filter((rx) => {
+    const pName = `${rx.patient?.user?.firstName || ""} ${rx.patient?.user?.lastName || ""}`.toLowerCase();
+    const med = (rx.medication || "").toLowerCase();
+    return pName.includes(search.toLowerCase()) || med.includes(search.toLowerCase());
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Prescriptions</h1>
-          <p className="text-muted-foreground">Create and manage patient prescriptions.</p>
+          <p className="text-muted-foreground">Issue and monitor patient pharmacological therapies.</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto">
+        <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto cursor-pointer">
           <Plus className="mr-2 h-4 w-4" /> New Prescription
         </Button>
+      </div>
+
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by patient or medication name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9 h-9 text-xs"
+        />
       </div>
 
       <Card>
@@ -157,17 +174,47 @@ export default function DoctorPrescriptions() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {prescriptions.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No prescriptions found.</TableCell></TableRow>
+              {loading ? (
+                Array.from({ length: 4 }).map((_, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  </TableRow>
+                ))
+              ) : filteredPrescriptions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="p-8">
+                    <EmptyState
+                      icon={Pill}
+                      title="No prescriptions found"
+                      description={
+                        search
+                          ? "No prescriptions match your search criteria."
+                          : "No prescriptions have been issued yet."
+                      }
+                      actionLabel={search ? "Clear Search" : "Issue First Prescription"}
+                      onAction={() => {
+                        if (search) setSearch("");
+                        else setDialogOpen(true);
+                      }}
+                    />
+                  </TableCell>
+                </TableRow>
               ) : (
-                prescriptions.map((rx) => (
-                  <TableRow key={rx.id}>
-                    <TableCell>{new Date(rx.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>{rx.patient?.user ? `${rx.patient.user.firstName} ${rx.patient.user.lastName}` : "—"}</TableCell>
-                    <TableCell className="font-medium">{rx.medication || "—"}</TableCell>
-                    <TableCell>{rx.dosage || "—"}</TableCell>
-                    <TableCell>{rx.frequency || "—"}</TableCell>
-                    <TableCell>{rx.duration || "—"}</TableCell>
+                filteredPrescriptions.map((rx) => (
+                  <TableRow key={rx.id} className="hover:bg-muted/30 transition-colors">
+                    <TableCell className="font-mono text-xs">{new Date(rx.createdAt || rx.issuedDate).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-semibold text-foreground">
+                      {rx.patient?.user ? `${rx.patient.user.firstName} ${rx.patient.user.lastName}` : `Patient #${rx.patientId || "—"}`}
+                    </TableCell>
+                    <TableCell className="font-semibold text-emerald-600 dark:text-emerald-400">{rx.medication || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{rx.dosage || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{rx.frequency || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{rx.duration || "—"}</TableCell>
                   </TableRow>
                 ))
               )}

@@ -10,9 +10,12 @@ import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Plus, FileDown, Activity } from "lucide-react";
+import { Plus, FileDown, Activity, Search, Building2 } from "lucide-react";
 import { downloadReport } from "@/lib/reports";
 import { DoctorVitalsLiveMonitor } from "@/components/vitals/DoctorVitalsLiveMonitor";
+import { toast } from "@/components/ui/toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function DoctorAdmissions() {
   const [admissions, setAdmissions] = useState<any[]>([]);
@@ -21,6 +24,7 @@ export default function DoctorAdmissions() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedVitalsAdm, setSelectedVitalsAdm] = useState<any | null>(null);
+  const [search, setSearch] = useState("");
 
   const [doctorId, setDoctorId] = useState<number | null>(null);
   const [beds, setBeds] = useState<any[]>([]);
@@ -106,7 +110,7 @@ export default function DoctorAdmissions() {
     setSubmitting(true);
     try {
       if (!bedId) {
-        alert("Please select an available bed before admitting a patient.");
+        toast.warning("Bed Required", "Please select an available bed before admitting a patient.");
         setSubmitting(false);
         return;
       }
@@ -130,10 +134,11 @@ export default function DoctorAdmissions() {
       await api.post("/admissions", payload);
       setDialogOpen(false);
       setPatientId(""); setReason("");
+      toast.success("Patient Admitted", "Patient has been admitted to ward bed.");
       fetchData();
       fetchBeds();
     } catch (error: any) {
-      alert(error.response?.data?.message || "Failed to create admission.");
+      toast.error("Admission Failed", error.response?.data?.message || "Failed to create admission.");
     } finally {
       setSubmitting(false);
     }
@@ -142,10 +147,11 @@ export default function DoctorAdmissions() {
   const handleDischarge = async (id: string | number) => {
     try {
       await api.patch(`/admissions/${id}`, { status: "discharged" });
+      toast.success("Patient Discharged", "Admission has been concluded and bed freed.");
       fetchData();
       fetchBeds();
     } catch (error: any) {
-      alert(error.response?.data?.message || "Failed to discharge.");
+      toast.error("Discharge Failed", error.response?.data?.message || "Failed to discharge patient.");
     }
   };
 
@@ -158,20 +164,34 @@ export default function DoctorAdmissions() {
     }
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading admissions...</div>;
-  }
+  const filteredAdmissions = admissions.filter((adm) => {
+    const pName = `${adm.patient?.user?.firstName || ""} ${adm.patient?.user?.lastName || ""}`.toLowerCase();
+    const bNum = `${adm.bed?.bedNumber || ""}`.toLowerCase();
+    const wName = `${adm.bed?.ward?.name || ""}`.toLowerCase();
+    const reasonStr = (adm.reason || "").toLowerCase();
+    return pName.includes(search.toLowerCase()) || bNum.includes(search.toLowerCase()) || wName.includes(search.toLowerCase()) || reasonStr.includes(search.toLowerCase());
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admissions</h1>
-          <p className="text-muted-foreground">Manage patient admissions, live vital monitoring, and discharges.</p>
+          <p className="text-muted-foreground">Manage inpatient admissions, ICU vitals, and discharges.</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto">
+        <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto cursor-pointer">
           <Plus className="mr-2 h-4 w-4" /> Admit Patient
         </Button>
+      </div>
+
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by patient, bed, or ward..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9 h-9 text-xs"
+        />
       </div>
 
       <Card>
@@ -188,8 +208,36 @@ export default function DoctorAdmissions() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {admissions.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No admissions found.</TableCell></TableRow>
+              {loading ? (
+                Array.from({ length: 4 }).map((_, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-44" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-28 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
+              ) : filteredAdmissions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="p-8">
+                    <EmptyState
+                      icon={Building2}
+                      title="No admissions found"
+                      description={
+                        search
+                          ? "No inpatient admissions match your search query."
+                          : "No patients are currently admitted."
+                      }
+                      actionLabel={search ? "Clear Search" : "Admit New Patient"}
+                      onAction={() => {
+                        if (search) setSearch("");
+                        else setDialogOpen(true);
+                      }}
+                    />
+                  </TableCell>
+                </TableRow>
               ) : (
                 admissions.map((adm) => (
                   <TableRow key={adm.id}>

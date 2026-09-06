@@ -19,6 +19,8 @@ import {
   ChevronRight,
   Hospital,
   X,
+  Activity,
+  Webhook,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useSidebar } from "@/context/SidebarContext";
@@ -39,6 +41,7 @@ const doctorLinks = [
   { name: "Dashboard", href: "/doctor/dashboard", icon: Home },
   { name: "My Appointments", href: "/doctor/dashboard/appointments", icon: Calendar },
   { name: "My Patients", href: "/doctor/dashboard/patients", icon: Users },
+  { name: "ICU Telemetry", href: "/doctor/dashboard/telemetry", icon: Activity },
   { name: "Medical Records", href: "/doctor/dashboard/records", icon: FileText },
   { name: "Prescriptions", href: "/doctor/dashboard/prescriptions", icon: Pill },
   { name: "Lab Tests", href: "/doctor/dashboard/lab-tests", icon: FlaskConical },
@@ -51,9 +54,11 @@ const staffLinks = [
   { name: "Appointments", href: "/staff/dashboard/appointments", icon: Calendar },
   { name: "Patients", href: "/staff/dashboard/patients", icon: Users },
   { name: "Doctors", href: "/staff/dashboard/doctors", icon: Stethoscope },
+  { name: "ICU Telemetry", href: "/staff/dashboard/telemetry", icon: Activity },
   { name: "Medical Records", href: "/staff/dashboard/records", icon: FileText },
   { name: "Admissions", href: "/staff/dashboard/admissions", icon: ClipboardList },
   { name: "Beds & Wards", href: "/staff/dashboard/beds", icon: BedDouble },
+  { name: "Webhooks & API", href: "/staff/dashboard/webhooks", icon: Webhook },
 ];
 
 export function Sidebar({ role }: { role: string }) {

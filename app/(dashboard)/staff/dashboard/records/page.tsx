@@ -10,7 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, Search, FileText } from "lucide-react";
+import { toast } from "@/components/ui/toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function StaffMedicalRecords() {
   const [records, setRecords] = useState<any[]>([]);
@@ -18,6 +21,7 @@ export default function StaffMedicalRecords() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState("");
 
   const [patientId, setPatientId] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
@@ -36,7 +40,7 @@ export default function StaffMedicalRecords() {
       const list = Array.isArray(res.data) ? res.data : Array.isArray(res.data?.data) ? res.data.data : [];
       setRecords(list);
     } catch (error) {
-      setRecords([]);
+      console.error("Error:", error);
     } finally {
       setLoading(false);
     }
@@ -45,8 +49,7 @@ export default function StaffMedicalRecords() {
   const fetchPatients = async () => {
     try {
       const res = await api.get("/patients?take=100").catch(() => ({ data: [] }));
-      const data = res?.data;
-      const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+      const list = Array.isArray(res.data) ? res.data : Array.isArray(res.data?.data) ? res.data.data : [];
       setPatients(list);
     } catch (error) {
       console.error("Failed to load patients", error);
@@ -61,28 +64,42 @@ export default function StaffMedicalRecords() {
       await api.post("/medical-records", { patientId: numericPatientId, diagnosis, symptoms, treatment, notes });
       setDialogOpen(false);
       setPatientId(""); setDiagnosis(""); setSymptoms(""); setTreatment(""); setNotes("");
+      toast.success("Medical Record Created", "Successfully recorded clinical encounter.");
       fetchData();
     } catch (error: any) {
-      alert(error.response?.data?.message || "Failed to create record.");
+      toast.error("Creation Failed", error.response?.data?.message || "Failed to create record.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading records...</div>;
-  }
+  const filteredRecords = records.filter((r) => {
+    const pName = `${r.patient?.user?.firstName || ""} ${r.patient?.user?.lastName || ""}`.toLowerCase();
+    const diag = (r.diagnosis || "").toLowerCase();
+    const sym = (r.symptoms || "").toLowerCase();
+    return pName.includes(search.toLowerCase()) || diag.includes(search.toLowerCase()) || sym.includes(search.toLowerCase());
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Medical Records</h1>
-          <p className="text-muted-foreground">View and create patient medical records.</p>
+          <p className="text-muted-foreground">Comprehensive institutional archive of patient clinical records.</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto">
+        <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto cursor-pointer">
           <Plus className="mr-2 h-4 w-4" /> New Record
         </Button>
+      </div>
+
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by patient, diagnosis, or symptom..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9 h-9 text-xs"
+        />
       </div>
 
       <Card>
@@ -95,21 +112,51 @@ export default function StaffMedicalRecords() {
                 <TableHead className="whitespace-nowrap">Diagnosis</TableHead>
                 <TableHead className="whitespace-nowrap">Symptoms</TableHead>
                 <TableHead className="whitespace-nowrap">Treatment</TableHead>
-                <TableHead className="whitespace-nowrap">Created By</TableHead>
+                <TableHead className="whitespace-nowrap">Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {records.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No records found.</TableCell></TableRow>
+              {loading ? (
+                Array.from({ length: 4 }).map((_, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                  </TableRow>
+                ))
+              ) : filteredRecords.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="p-8">
+                    <EmptyState
+                      icon={FileText}
+                      title="No medical records found"
+                      description={
+                        search
+                          ? "No medical records match your search criteria."
+                          : "No medical records have been created in the hospital system."
+                      }
+                      actionLabel={search ? "Clear Search" : "Create First Record"}
+                      onAction={() => {
+                        if (search) setSearch("");
+                        else setDialogOpen(true);
+                      }}
+                    />
+                  </TableCell>
+                </TableRow>
               ) : (
-                records.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>{new Date(r.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>{r.patient?.user ? `${r.patient.user.firstName} ${r.patient.user.lastName}` : "—"}</TableCell>
-                    <TableCell>{r.diagnosis || "—"}</TableCell>
-                    <TableCell>{r.symptoms || "—"}</TableCell>
-                    <TableCell>{r.treatment || "—"}</TableCell>
-                    <TableCell>{r.doctor?.user ? `Dr. ${r.doctor.user.firstName} ${r.doctor.user.lastName}` : "—"}</TableCell>
+                filteredRecords.map((r) => (
+                  <TableRow key={r.id} className="hover:bg-muted/30 transition-colors">
+                    <TableCell className="font-mono text-xs">{new Date(r.createdAt || r.recordDate).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-semibold text-foreground">
+                      {r.patient?.user ? `${r.patient.user.firstName} ${r.patient.user.lastName}` : `Patient #${r.patientId || "—"}`}
+                    </TableCell>
+                    <TableCell className="font-medium text-foreground">{r.diagnosis || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{r.symptoms || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{r.treatment || "—"}</TableCell>
+                    <TableCell className="max-w-[200px] truncate text-muted-foreground text-xs">{r.notes || "—"}</TableCell>
                   </TableRow>
                 ))
               )}

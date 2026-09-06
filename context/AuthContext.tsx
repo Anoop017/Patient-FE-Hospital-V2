@@ -37,7 +37,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           // Fetch global user context
           const response = await api.get("/auth/profile");
-          setUser(response.data);
+          if (response.data?.userType === "admin") {
+            // Guard: Disallow admin session in the patient/clinical portal
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("role");
+            setRole(null);
+            setUser(null);
+          } else {
+            setUser(response.data);
+          }
         } catch (error) {
           console.error("Failed to fetch user profile", error);
           localStorage.removeItem("accessToken");
@@ -54,7 +62,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = (token: string, roles: any[], userObj?: any) => {
     localStorage.setItem("accessToken", token);
-    const primaryRole = typeof roles[0] === "string" ? roles[0] : (roles[0]?.name || "patient");
+    const roleList = (roles || []).map((r: any) =>
+      typeof r === "string" ? r.toLowerCase() : (r.name || "").toLowerCase()
+    );
+    const primaryRole =
+      roleList.find((r) => ["doctor", "staff", "nurse", "patient"].includes(r)) || "patient";
     localStorage.setItem("role", primaryRole);
     setRole(primaryRole);
     if (userObj) {
@@ -62,7 +74,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     // Asynchronously fetch full profile
     api.get("/auth/profile").then((res) => {
-      setUser(res.data);
+      if (res.data?.userType !== "admin") {
+        setUser(res.data);
+      }
     }).catch(() => {});
   };
 

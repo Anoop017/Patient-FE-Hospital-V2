@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { BedDouble } from "lucide-react";
+import { BedDouble, RefreshCw } from "lucide-react";
+import { toast } from "@/components/ui/toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function DoctorBeds() {
   const [beds, setBeds] = useState<any[]>([]);
@@ -34,9 +37,10 @@ export default function DoctorBeds() {
   const updateBedStatus = async (id: string, status: string) => {
     try {
       await api.patch(`/beds/${id}`, { status });
+      toast.success("Bed Status Updated", `Bed marked as ${status}.`);
       fetchData();
     } catch (error: any) {
-      alert(error.response?.data?.message || "Failed to update bed.");
+      toast.error("Update Failed", error.response?.data?.message || "Failed to update bed status.");
     }
   };
 
@@ -51,15 +55,11 @@ export default function DoctorBeds() {
 
   const availableBeds = beds.filter((b) => b.status?.toLowerCase() === "available");
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading beds...</div>;
-  }
-
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Beds & Wards</h1>
-        <p className="text-muted-foreground">View and assign beds across wards.</p>
+        <p className="text-muted-foreground">View and manage clinical occupancy across wards.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -68,20 +68,26 @@ export default function DoctorBeds() {
             <CardTitle className="text-sm font-medium">Total Beds</CardTitle>
             <BedDouble className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent><div className="text-2xl font-bold">{beds.length}</div></CardContent>
+          <CardContent>
+            {loading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{beds.length}</div>}
+          </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Available</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold">{availableBeds.length}</div></CardContent>
+          <CardContent>
+            {loading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{availableBeds.length}</div>}
+          </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Wards</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold">{wards.length}</div></CardContent>
+          <CardContent>
+            {loading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{wards.length}</div>}
+          </CardContent>
         </Card>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>All Beds</CardTitle></CardHeader>
+        <CardHeader><CardTitle>All Hospital Beds</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -94,8 +100,26 @@ export default function DoctorBeds() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {beds.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No beds found.</TableCell></TableRow>
+              {loading ? (
+                Array.from({ length: 4 }).map((_, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-32" /></TableCell>
+                  </TableRow>
+                ))
+              ) : beds.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="p-8">
+                    <EmptyState
+                      icon={BedDouble}
+                      title="No beds registered"
+                      description="No beds or wards have been configured in the system yet."
+                    />
+                  </TableCell>
+                </TableRow>
               ) : (
                 beds.map((bed) => (
                   <TableRow key={bed.id}>

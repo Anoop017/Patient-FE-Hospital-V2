@@ -22,6 +22,7 @@ import {
   CheckCircle2,
   CalendarCheck
 } from "lucide-react";
+import { toast } from "@/components/ui/toast";
 
 interface Slot {
   time: string;
@@ -161,10 +162,13 @@ export default function PatientAppointments() {
 
       setDialogOpen(false);
       resetForm();
+      toast.success("Appointment Scheduled", "Your consultation has been booked successfully.");
       await fetchData();
     } catch (error: any) {
       console.error("Error booking appointment:", error);
-      setFormError(error.message || "Failed to book appointment.");
+      const msg = error.message || "Failed to book appointment.";
+      setFormError(msg);
+      toast.error("Booking Failed", msg);
     } finally {
       setSubmitting(false);
     }
@@ -193,10 +197,11 @@ export default function PatientAppointments() {
       });
       setCancelModalOpen(false);
       setSelectedApptToCancel(null);
+      toast.success("Appointment Cancelled", "Your appointment has been cancelled.");
       await fetchData();
     } catch (error: any) {
       console.error("Error cancelling appointment:", error);
-      alert(error.message || "Failed to cancel appointment.");
+      toast.error("Cancellation Failed", error.message || "Failed to cancel appointment.");
     } finally {
       setCancelling(false);
     }

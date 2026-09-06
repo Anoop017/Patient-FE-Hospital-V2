@@ -11,8 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Plus, FileDown } from "lucide-react";
+import { Plus, FileDown, Search, FlaskConical } from "lucide-react";
 import { downloadReport } from "@/lib/reports";
+import { toast } from "@/components/ui/toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function DoctorLabTests() {
   const [tests, setTests] = useState<any[]>([]);
@@ -20,6 +23,7 @@ export default function DoctorLabTests() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState("");
 
   const [doctorId, setDoctorId] = useState<number | null>(null);
   const [patientId, setPatientId] = useState("");
@@ -114,13 +118,20 @@ export default function DoctorLabTests() {
       await api.post("/laboratory", payload);
       setDialogOpen(false);
       setPatientId(""); setTestName(""); setTestType("Blood Test");
+      toast.success("Lab Test Ordered", `Diagnostic test order for ${testName} created.`);
       fetchData();
     } catch (error: any) {
-      alert(error.response?.data?.message || "Failed to order lab test.");
+      toast.error("Order Failed", error.response?.data?.message || "Failed to order lab test.");
     } finally {
       setSubmitting(false);
     }
   };
+
+  const filteredTests = tests.filter((t) => {
+    const pName = `${t.patient?.user?.firstName || ""} ${t.patient?.user?.lastName || ""}`.toLowerCase();
+    const tName = (t.testName || t.name || "").toLowerCase();
+    return pName.includes(search.toLowerCase()) || tName.includes(search.toLowerCase());
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -131,20 +142,26 @@ export default function DoctorLabTests() {
     }
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading lab tests...</div>;
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Lab Tests</h1>
-          <p className="text-muted-foreground">Order and manage laboratory tests.</p>
+          <p className="text-muted-foreground">Order and monitor clinical laboratory diagnostics.</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto">
+        <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto cursor-pointer">
           <Plus className="mr-2 h-4 w-4" /> Order Lab Test
         </Button>
+      </div>
+
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by patient or test name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9 h-9 text-xs"
+        />
       </div>
 
       <Card>
@@ -162,27 +179,57 @@ export default function DoctorLabTests() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tests.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No lab tests found.</TableCell></TableRow>
+              {loading ? (
+                Array.from({ length: 4 }).map((_, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
+              ) : filteredTests.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="p-8">
+                    <EmptyState
+                      icon={FlaskConical}
+                      title="No lab tests found"
+                      description={
+                        search
+                          ? "No diagnostic tests match your search query."
+                          : "No laboratory tests have been ordered yet."
+                      }
+                      actionLabel={search ? "Clear Search" : "Order First Test"}
+                      onAction={() => {
+                        if (search) setSearch("");
+                        else setDialogOpen(true);
+                      }}
+                    />
+                  </TableCell>
+                </TableRow>
               ) : (
-                tests.map((test) => (
-                  <TableRow key={test.id}>
-                    <TableCell>{new Date(test.createdAt || test.testDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{test.patient?.user ? `${test.patient.user.firstName} ${test.patient.user.lastName}` : "—"}</TableCell>
-                    <TableCell className="font-medium">{test.testName || test.name || "—"}</TableCell>
-                    <TableCell>{test.testType || "General"}</TableCell>
+                filteredTests.map((test) => (
+                  <TableRow key={test.id} className="hover:bg-muted/30 transition-colors">
+                    <TableCell className="font-mono text-xs">{new Date(test.createdAt || test.testDate).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-semibold text-foreground">
+                      {test.patient?.user ? `${test.patient.user.firstName} ${test.patient.user.lastName}` : `Patient #${test.patientId || "—"}`}
+                    </TableCell>
+                    <TableCell className="font-semibold text-foreground">{test.testName || test.name || "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{test.testType || "General"}</TableCell>
                     <TableCell>{getStatusBadge(test.status)}</TableCell>
-                    <TableCell>{test.result || "Pending"}</TableCell>
+                    <TableCell className="text-xs font-medium">{test.result || "Pending Analysis"}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => downloadReport("lab", test.id)}
-                        title="Download Lab Report PDF"
-                        className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30"
+                        className="h-7 px-2 text-xs cursor-pointer hover:border-primary/50"
+                        title="Download Official PDF Report"
                       >
-                        <FileDown className="h-3.5 w-3.5" />
-                        PDF
+                        <FileDown className="mr-1 h-3.5 w-3.5 text-primary" /> PDF
                       </Button>
                     </TableCell>
                   </TableRow>

@@ -67,19 +67,19 @@ export function ThemeToggle({
       <button
         onClick={toggleTheme}
         className={cn(
-          "inline-flex items-center gap-2 rounded-full border border-border bg-background/80 backdrop-blur-sm px-3.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/80 shadow-xs transition-all cursor-pointer",
+          "inline-flex items-center gap-2 rounded-full border border-border bg-card/90 backdrop-blur-sm px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted shadow-xs transition-all cursor-pointer",
           className
         )}
         aria-label="Toggle theme"
       >
         {isDark ? (
           <>
-            <Sun className="h-3.5 w-3.5 text-amber-500" />
+            <Sun className="h-3.5 w-3.5 text-amber-500 shrink-0" />
             <span>Light mode</span>
           </>
         ) : (
           <>
-            <Moon className="h-3.5 w-3.5 text-slate-700" />
+            <Moon className="h-3.5 w-3.5 text-foreground shrink-0" />
             <span>Dark mode</span>
           </>
         )}
