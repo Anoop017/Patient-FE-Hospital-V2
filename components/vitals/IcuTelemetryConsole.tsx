@@ -14,8 +14,6 @@ import {
   Gauge,
   Thermometer,
   Radio,
-  Volume2,
-  VolumeX,
   AlertTriangle,
   FileDown,
   RefreshCw,
@@ -139,7 +137,6 @@ export function IcuTelemetryConsole() {
 
   const [selectedPatientId, setSelectedPatientId] = useState<string>("104");
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
-  const [audioEnabled, setAudioEnabled] = useState(false);
   const [metricTab, setMetricTab] = useState<"hr" | "spo2" | "bp" | "all">("hr");
   const [timeWindow, setTimeWindow] = useState<"1h" | "6h" | "24h">("1h");
   const [historyData, setHistoryData] = useState<any[]>([]);
@@ -334,16 +331,6 @@ export function IcuTelemetryConsole() {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setAudioEnabled(!audioEnabled)}
-            className={`gap-1.5 text-xs h-9 ${audioEnabled ? "border-amber-500/30 text-amber-600 bg-amber-500/10" : ""}`}
-          >
-            {audioEnabled ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
-            {audioEnabled ? "Audio Alarm: ON" : "Audio Alarm: MUTED"}
-          </Button>
-
           <Button
             variant="default"
             size="sm"

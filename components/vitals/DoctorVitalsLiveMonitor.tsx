@@ -11,8 +11,6 @@ import {
   Gauge,
   Thermometer,
   Radio,
-  Volume2,
-  VolumeX,
   History,
   AlertTriangle,
   BedDouble,
@@ -62,7 +60,6 @@ export function DoctorVitalsLiveMonitor({
   const [vitalsMap, setVitalsMap] = useState<Record<string, VitalSign>>({});
   const [activePatientKey, setActivePatientKey] = useState<string>("");
   const [status, setStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
-  const [soundEnabled, setSoundEnabled] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyData, setHistoryData] = useState<VitalSign[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -178,12 +175,12 @@ export function DoctorVitalsLiveMonitor({
 
   return (
     <div
-      className={`rounded-2xl border p-4 sm:p-5 transition-all relative overflow-hidden backdrop-blur-xs ${
+      className={`dark rounded-2xl border p-4 sm:p-5 transition-all relative overflow-hidden bg-slate-950 text-slate-100 shadow-xl ${
         isCritical
-          ? "bg-rose-950/40 border-rose-500/80 shadow-lg shadow-rose-950/50"
+          ? "border-rose-500/70 shadow-rose-950/40 ring-1 ring-rose-500/30"
           : isWarning
-          ? "bg-amber-950/30 border-amber-500/60 shadow-md shadow-amber-950/30"
-          : "bg-slate-900 text-slate-100 border-slate-800 shadow-sm"
+          ? "border-amber-500/60 shadow-amber-950/20 ring-1 ring-amber-500/30"
+          : "border-slate-800/80 shadow-slate-950/20"
       } ${className}`}
     >
       {/* Background ECG animation grid line */}
@@ -195,19 +192,24 @@ export function DoctorVitalsLiveMonitor({
           <div
             className={`flex size-10 items-center justify-center rounded-xl font-bold ${
               isCritical
-                ? "bg-rose-600 text-white animate-pulse shadow-md shadow-rose-500/40"
+                ? "bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse shadow-sm shadow-rose-500/20"
                 : isWarning
-                ? "bg-amber-500 text-slate-950"
+                ? "bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm shadow-amber-500/20"
                 : "bg-teal-500/20 text-teal-400 border border-teal-500/30"
             }`}
           >
             <Activity className="size-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h4 className="font-bold text-base sm:text-lg tracking-tight text-white flex items-center gap-2">
                 {currentVital.patientName || `Patient #${currentVital.patientId || "ICU"}`}
               </h4>
+              {isWarning && (
+                <span className="text-xs text-amber-400/90 font-medium font-mono">
+                  • Elevated Temp ({currentVital.temperature !== undefined ? currentVital.temperature.toFixed(1) : "--"}°C)
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
               <BedDouble className="size-3.5 text-slate-400" />
@@ -222,9 +224,9 @@ export function DoctorVitalsLiveMonitor({
           <span
             className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-mono font-medium border ${
               status === "connected"
-                ? "bg-emerald-950/60 text-emerald-400 border-emerald-500/40"
+                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
                 : status === "connecting"
-                ? "bg-amber-950/60 text-amber-400 border-amber-500/40"
+                ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
                 : "bg-slate-800 text-slate-400 border-slate-700"
             }`}
           >
@@ -242,15 +244,15 @@ export function DoctorVitalsLiveMonitor({
 
           {/* Alert Level Badge */}
           {isCritical ? (
-            <Badge variant="destructive" className="animate-bounce font-bold tracking-wide">
+            <Badge variant="destructive" className="animate-bounce font-bold tracking-wide bg-rose-500/20 text-rose-300 border-rose-500/40">
               <AlertTriangle className="size-3 mr-1" /> CRITICAL
             </Badge>
           ) : isWarning ? (
-            <Badge variant="warning" className="font-semibold">
+            <Badge variant="warning" className="font-semibold bg-amber-500/20 text-amber-300 border-amber-500/40">
               <AlertTriangle className="size-3 mr-1" /> WARNING
             </Badge>
           ) : (
-            <Badge variant="outline" className="bg-emerald-950/40 text-emerald-400 border-emerald-500/30 font-medium">
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-medium">
               <Radio className="size-3 mr-1 animate-pulse" /> NORMAL
             </Badge>
           )}
@@ -265,17 +267,6 @@ export function DoctorVitalsLiveMonitor({
           >
             <History className="size-3.5 mr-1" /> History
           </Button>
-
-          {/* Alarm Audio Toggle */}
-          <button
-            type="button"
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-            title={soundEnabled ? "Mute Alarms" : "Enable Audio Alarm"}
-            aria-label="Toggle Sound"
-          >
-            {soundEnabled ? <Volume2 className="size-4 text-teal-400" /> : <VolumeX className="size-4" />}
-          </button>
         </div>
       </div>
 
@@ -314,7 +305,15 @@ export function DoctorVitalsLiveMonitor({
       {/* Telemetry Metric Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 text-center relative z-10">
         {/* Heart Rate */}
-        <div className="rounded-xl bg-slate-950/70 border border-slate-800 p-3 flex flex-col justify-between">
+        <div
+          className={`rounded-xl border p-3 flex flex-col justify-between transition-colors ${
+            currentVital.heartRate && (currentVital.heartRate > 120 || currentVital.heartRate < 50)
+              ? "bg-rose-950/30 border-rose-500/50"
+              : currentVital.heartRate && (currentVital.heartRate > 100 || currentVital.heartRate < 60)
+              ? "bg-amber-950/30 border-amber-500/40"
+              : "bg-slate-900/90 border-slate-800"
+          }`}
+        >
           <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
             <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1">
               <Heart className={`size-3.5 text-rose-400 ${status === "connected" ? "animate-pulse" : ""}`} /> Heart Rate
@@ -331,7 +330,15 @@ export function DoctorVitalsLiveMonitor({
         </div>
 
         {/* Oxygen SpO2 */}
-        <div className="rounded-xl bg-slate-950/70 border border-slate-800 p-3 flex flex-col justify-between">
+        <div
+          className={`rounded-xl border p-3 flex flex-col justify-between transition-colors ${
+            currentVital.spo2 !== undefined && currentVital.spo2 < 92
+              ? "bg-rose-950/30 border-rose-500/50"
+              : currentVital.spo2 !== undefined && currentVital.spo2 < 95
+              ? "bg-amber-950/30 border-amber-500/40"
+              : "bg-slate-900/90 border-slate-800"
+          }`}
+        >
           <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
             <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1">
               <Wind className="size-3.5 text-cyan-400" /> SpO2
@@ -340,7 +347,11 @@ export function DoctorVitalsLiveMonitor({
           </div>
           <p
             className={`text-2xl sm:text-3xl font-extrabold font-mono tracking-tight my-1 ${
-              (currentVital.spo2 ?? 100) < 92 ? "text-rose-400" : "text-cyan-400"
+              (currentVital.spo2 ?? 100) < 92
+                ? "text-rose-400"
+                : (currentVital.spo2 ?? 100) < 95
+                ? "text-amber-400"
+                : "text-cyan-400"
             }`}
           >
             {currentVital.spo2 ?? "--"}%
@@ -352,7 +363,15 @@ export function DoctorVitalsLiveMonitor({
         </div>
 
         {/* Blood Pressure (Systolic / Diastolic) */}
-        <div className="rounded-xl bg-slate-950/70 border border-slate-800 p-3 flex flex-col justify-between">
+        <div
+          className={`rounded-xl border p-3 flex flex-col justify-between transition-colors ${
+            currentVital.systolicBp && (currentVital.systolicBp >= 160 || currentVital.systolicBp < 90)
+              ? "bg-rose-950/30 border-rose-500/50"
+              : currentVital.systolicBp && (currentVital.systolicBp >= 140 || currentVital.systolicBp < 100)
+              ? "bg-amber-950/30 border-amber-500/40"
+              : "bg-slate-900/90 border-slate-800"
+          }`}
+        >
           <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
             <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1">
               <Gauge className="size-3.5 text-amber-400" /> NIBP
@@ -369,14 +388,37 @@ export function DoctorVitalsLiveMonitor({
         </div>
 
         {/* Core Temperature & Respiration */}
-        <div className="rounded-xl bg-slate-950/70 border border-slate-800 p-3 flex flex-col justify-between">
+        <div
+          className={`rounded-xl border p-3 flex flex-col justify-between transition-colors ${
+            currentVital.temperature !== undefined && (currentVital.temperature >= 39.5 || currentVital.temperature < 35.0)
+              ? "bg-rose-950/30 border-rose-500/50"
+              : currentVital.temperature !== undefined && (currentVital.temperature >= 38.0 || currentVital.temperature < 36.0)
+              ? "bg-amber-950/30 border-amber-500/40"
+              : "bg-slate-900/90 border-slate-800"
+          }`}
+        >
           <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
             <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1">
-              <Thermometer className="size-3.5 text-emerald-400" /> Temp / Resp
+              <Thermometer
+                className={`size-3.5 ${
+                  currentVital.temperature !== undefined && currentVital.temperature >= 38.0
+                    ? "text-amber-400"
+                    : "text-emerald-400"
+                }`}
+              />{" "}
+              Temp / Resp
             </span>
             <span className="text-[10px] text-slate-500">°C | /m</span>
           </div>
-          <p className="text-xl sm:text-2xl font-extrabold text-emerald-400 font-mono tracking-tight my-1.5">
+          <p
+            className={`text-xl sm:text-2xl font-extrabold font-mono tracking-tight my-1.5 ${
+              currentVital.temperature !== undefined && currentVital.temperature >= 39.5
+                ? "text-rose-400"
+                : currentVital.temperature !== undefined && currentVital.temperature >= 38.0
+                ? "text-amber-400"
+                : "text-emerald-400"
+            }`}
+          >
             {currentVital.temperature !== undefined ? currentVital.temperature.toFixed(1) : "--"}°C
           </p>
           <div className="text-[10px] text-slate-500 flex justify-between">
