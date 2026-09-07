@@ -20,7 +20,6 @@ import {
   Hospital,
   X,
   Activity,
-  Webhook,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useSidebar } from "@/context/SidebarContext";
@@ -58,7 +57,6 @@ const staffLinks = [
   { name: "Medical Records", href: "/staff/dashboard/records", icon: FileText },
   { name: "Admissions", href: "/staff/dashboard/admissions", icon: ClipboardList },
   { name: "Beds & Wards", href: "/staff/dashboard/beds", icon: BedDouble },
-  { name: "Webhooks & API", href: "/staff/dashboard/webhooks", icon: Webhook },
 ];
 
 export function Sidebar({ role }: { role: string }) {
