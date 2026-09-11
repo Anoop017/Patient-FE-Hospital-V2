@@ -41,16 +41,32 @@ export default function StaffDashboard() {
   const [beds, setBeds] = useState<any[]>([]);
   const [wards, setWards] = useState<any[]>([]);
   const [admissions, setAdmissions] = useState<any[]>([]);
+  const [wardMatrix, setWardMatrix] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<"week" | "month" | "day">("week");
   const [loading, setLoading] = useState(true);
+
+  const fetchAnalytics = async (period: "week" | "month" | "day") => {
+    try {
+      const res = await api.get(`/dashboard/analytics?period=${period}`);
+      if (res?.data) {
+        setAnalytics(res.data);
+      }
+    } catch (err) {
+      console.error("Error fetching analytics:", err);
+    }
+  };
 
   const fetchData = async () => {
     try {
-      const [summaryRes, profileRes, bedsRes, wardsRes, admissionsRes] = await Promise.all([
+      const [summaryRes, profileRes, bedsRes, wardsRes, admissionsRes, matrixRes, analyticsRes] = await Promise.all([
         api.get("/dashboard/summary").catch(() => null),
         api.get("/staff/me").catch(() => null),
         api.get("/beds").catch(() => ({ data: [] })),
         api.get("/wards").catch(() => ({ data: [] })),
         api.get("/admissions").catch(() => ({ data: [] })),
+        api.get("/beds/availability-matrix").catch(() => ({ data: [] })),
+        api.get(`/dashboard/analytics?period=${analyticsPeriod}`).catch(() => null),
       ]);
 
       if (summaryRes?.data) setSummary(summaryRes.data);
@@ -58,6 +74,8 @@ export default function StaffDashboard() {
       if (bedsRes?.data) setBeds(Array.isArray(bedsRes.data) ? bedsRes.data : []);
       if (wardsRes?.data) setWards(Array.isArray(wardsRes.data) ? wardsRes.data : []);
       if (admissionsRes?.data) setAdmissions(Array.isArray(admissionsRes.data) ? admissionsRes.data : []);
+      if (matrixRes?.data) setWardMatrix(Array.isArray(matrixRes.data) ? matrixRes.data : []);
+      if (analyticsRes?.data) setAnalytics(analyticsRes.data);
     } catch (error) {
       console.error("Error fetching staff dashboard data:", error);
     } finally {
@@ -69,44 +87,63 @@ export default function StaffDashboard() {
     fetchData();
   }, []);
 
+  const handlePeriodChange = (p: "week" | "month" | "day") => {
+    setAnalyticsPeriod(p);
+    fetchAnalytics(p);
+  };
+
   // Compute Occupancy Rate
   const totalBedsCount = beds.length || 1;
   const occupiedBedsCount = beds.filter((b) => b.status?.toLowerCase() === "occupied").length;
   const occupancyRate = Math.round((occupiedBedsCount / totalBedsCount) * 100);
 
-  // Compute Ward-by-Ward Capacity for Recharts
+  // Compute Ward-by-Ward Capacity from real availability matrix or beds
   const wardChartData = useMemo(() => {
-    if (wards.length === 0) {
-      return [
-        { name: "ICU", available: 4, occupied: 6, total: 10 },
-        { name: "General", available: 12, occupied: 18, total: 30 },
-        { name: "Emergency", available: 5, occupied: 7, total: 12 },
-        { name: "Pediatrics", available: 8, occupied: 4, total: 12 },
-      ];
+    if (wardMatrix.length > 0) {
+      return wardMatrix.map((w: any) => ({
+        name: w.wardName || `Ward ${w.wardId}`,
+        available: w.availableBeds ?? 0,
+        occupied: w.occupiedBeds ?? 0,
+        total: w.totalBeds ?? 0,
+      }));
     }
 
-    return wards.slice(0, 5).map((ward) => {
+    if (wards.length === 0) {
+      return [];
+    }
+
+    return wards.map((ward: any) => {
       const wardBeds = beds.filter((b) => b.wardId === ward.id || b.ward?.id === ward.id);
       const occupied = wardBeds.filter((b) => b.status?.toLowerCase() === "occupied").length;
       const available = wardBeds.filter((b) => b.status?.toLowerCase() === "available").length;
       return {
         name: ward.name || `Ward ${ward.id}`,
-        available: available || 3,
-        occupied: occupied || 5,
-        total: (available + occupied) || 8,
+        available,
+        occupied,
+        total: wardBeds.length,
       };
     });
-  }, [wards, beds]);
+  }, [wardMatrix, wards, beds]);
 
-  // Compute 7-day Admission Trend Chart
+  // Real admission & discharge trends from backend time-series analytics
   const admissionTrendData = useMemo(() => {
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return days.map((day, idx) => ({
-      day,
-      admissions: Math.max(2, (admissions.length * (idx + 1) % 7) + 2),
-      discharges: Math.max(1, (admissions.length * (idx + 2) % 6) + 1),
+    if (!analytics?.labels || !analytics?.datasets) {
+      return [];
+    }
+
+    const admissionsDataset = analytics.datasets.find(
+      (d: any) => d.label?.toLowerCase() === "admissions"
+    );
+    const dischargesDataset = analytics.datasets.find(
+      (d: any) => d.label?.toLowerCase() === "discharges"
+    );
+
+    return analytics.labels.map((label: string, idx: number) => ({
+      day: label,
+      admissions: admissionsDataset?.data?.[idx] ?? 0,
+      discharges: dischargesDataset?.data?.[idx] ?? 0,
     }));
-  }, [admissions]);
+  }, [analytics]);
 
   const activeAdmissionsCount = admissions.filter((a) => a.status?.toLowerCase() === "admitted").length;
 
@@ -221,6 +258,10 @@ export default function StaffDashboard() {
               <div className="h-full flex items-center justify-center">
                 <Skeleton className="h-48 w-full" />
               </div>
+            ) : wardChartData.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-xs">
+                No ward or bed data available
+              </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={wardChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
@@ -248,20 +289,36 @@ export default function StaffDashboard() {
         {/* Admission vs Discharge Flow Trend */}
         <Card className="shadow-xs">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <CardTitle className="text-base font-semibold">Inpatient Turnaround Flow</CardTitle>
                 <CardDescription>Weekly admissions vs. discharge progression.</CardDescription>
               </div>
-              <Badge variant="outline" className="text-[11px] font-mono">
-                7-Day Window
-              </Badge>
+              <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border">
+                {(["day", "week", "month"] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => handlePeriodChange(p)}
+                    className={`px-2.5 py-0.5 text-xs font-medium rounded-md capitalize transition-all cursor-pointer ${
+                      analyticsPeriod === p
+                        ? "bg-background text-foreground shadow-xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="h-[280px]">
             {loading ? (
               <div className="h-full flex items-center justify-center">
                 <Skeleton className="h-48 w-full" />
+              </div>
+            ) : admissionTrendData.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-xs">
+                No admission or discharge records recorded
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">

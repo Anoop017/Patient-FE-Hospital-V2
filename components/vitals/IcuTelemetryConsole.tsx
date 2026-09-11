@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { getVitalsWsUrl, fetchVitalsHistory, fetchRecentVitalsAlerts, downloadReport } from "@/lib/reports";
+import { getVitalsWsUrl, fetchVitalsHistory, fetchRecentVitalsAlerts } from "@/lib/reports";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/toast";
 import {
   Activity,
   Heart,
@@ -15,7 +14,6 @@ import {
   Thermometer,
   Radio,
   AlertTriangle,
-  FileDown,
   RefreshCw,
   Clock,
   BedDouble,
@@ -296,16 +294,6 @@ export function IcuTelemetryConsole() {
     return patientList.filter((p) => p.alertLevel === "CRITICAL" || p.alertLevel === "WARNING");
   }, [patientList]);
 
-  const handleExportPDF = () => {
-    if (activePatient?.admissionId) {
-      toast.info(`Generating Maroto PDF ICU Clinical Dossier for ${activePatient.patientName}...`);
-      downloadReport("discharge", activePatient.admissionId);
-    } else {
-      toast.info(`Downloading clinical summary for ${activePatient.patientName}...`);
-      downloadReport("discharge", 1);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Top Banner & Control Station */}
@@ -328,18 +316,6 @@ export function IcuTelemetryConsole() {
           <p className="text-muted-foreground text-sm">
             Continuous multi-bed physiological waveform monitoring with early-warning telemetry thresholds.
           </p>
-        </div>
-
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleExportPDF}
-            className="gap-1.5 text-xs h-9 bg-primary hover:bg-primary/90"
-          >
-            <FileDown className="size-3.5" />
-            Export Maroto PDF Report
-          </Button>
         </div>
       </div>
 

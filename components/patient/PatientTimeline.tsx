@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { api } from "@/lib/api";
-import { downloadReport } from "@/lib/reports";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +13,6 @@ import {
   FlaskConical,
   Pill,
   BedDouble,
-  FileDown,
   Clock,
   User,
   Stethoscope,
@@ -58,7 +56,6 @@ export function PatientTimeline({ patientId, patientInfo, onOpenTelemetry }: Pat
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [patientDetails, setPatientDetails] = useState<any>(patientInfo || null);
-  const [latestAdmissionId, setLatestAdmissionId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!patientId) return;
@@ -99,7 +96,6 @@ export function PatientTimeline({ patientId, patientInfo, onOpenTelemetry }: Pat
 
         // 1. Admissions
         rawAdmits.forEach((adm: any) => {
-          if (!latestAdmissionId && adm.id) setLatestAdmissionId(adm.id);
           mapped.push({
             id: `adm-${adm.id}`,
             type: "admission",
@@ -243,22 +239,6 @@ export function PatientTimeline({ patientId, patientInfo, onOpenTelemetry }: Pat
     });
   }, [events, activeFilter]);
 
-  const handleExportPDF = () => {
-    if (latestAdmissionId) {
-      toast.info("Generating Maroto PDF clinical dossier...");
-      downloadReport("discharge", latestAdmissionId);
-    } else {
-      toast.info("Opening patient medical summary dossier...");
-      // Fallback: download the first available admission or billing report
-      const admit = events.find((e) => e.type === "admission");
-      if (admit && admit.raw?.id) {
-        downloadReport("discharge", admit.raw.id);
-      } else {
-        toast.warning("No completed inpatient admission record found to generate Maroto PDF.");
-      }
-    }
-  };
-
   const getEventIcon = (type: TimelineEvent["type"]) => {
     switch (type) {
       case "admission":
@@ -325,8 +305,8 @@ export function PatientTimeline({ patientId, patientInfo, onOpenTelemetry }: Pat
           </div>
 
           {/* Quick Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            {onOpenTelemetry && (
+          {onOpenTelemetry && (
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -336,17 +316,8 @@ export function PatientTimeline({ patientId, patientInfo, onOpenTelemetry }: Pat
                 <Activity className="size-3.5 text-teal-500 animate-pulse" />
                 Live Telemetry
               </Button>
-            )}
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleExportPDF}
-              className="gap-1.5 text-xs font-medium bg-primary hover:bg-primary/90"
-            >
-              <FileDown className="size-3.5" />
-              Export PDF Dossier
-            </Button>
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
