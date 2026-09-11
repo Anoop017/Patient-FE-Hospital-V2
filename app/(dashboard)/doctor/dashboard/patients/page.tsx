@@ -9,6 +9,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { formatMRN, formatDate } from "@/lib/formatters";
 import { Activity, History, Search, User, Calendar, Stethoscope } from "lucide-react";
 import {
   Dialog,
@@ -104,113 +105,168 @@ export default function DoctorPatients() {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="whitespace-nowrap">Patient</TableHead>
-                <TableHead className="whitespace-nowrap">Blood Group</TableHead>
-                <TableHead className="whitespace-nowrap">Total Encounters</TableHead>
-                <TableHead className="whitespace-nowrap">Last Visit</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="size-8 rounded-full" />
-                        <div className="space-y-1.5">
-                          <Skeleton className="h-4 w-32" />
-                          <Skeleton className="h-3 w-20" />
+          {loading ? (
+            <div className="p-6 space-y-3">
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+            </div>
+          ) : filteredPatients.length === 0 ? (
+            <div className="py-12 px-4">
+              <EmptyState
+                icon={User}
+                title="No patients found"
+                description={search ? "Try adjusting your search keywords." : "You currently have no patient records assigned."}
+                actionLabel={search ? "Clear Search" : undefined}
+                onAction={search ? () => setSearch("") : undefined}
+              />
+            </div>
+          ) : (
+            <>
+              {/* DESKTOP PATIENTS TABLE */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Patient</TableHead>
+                      <TableHead className="whitespace-nowrap">MRN</TableHead>
+                      <TableHead className="whitespace-nowrap">Blood Group</TableHead>
+                      <TableHead className="whitespace-nowrap">Total Encounters</TableHead>
+                      <TableHead className="whitespace-nowrap">Last Visit</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPatients.map((patient) => (
+                      <TableRow key={patient.id} className="hover:bg-muted/40 transition-colors">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs border border-primary/20">
+                              {patient.user?.firstName?.[0] || "P"}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-foreground">
+                                {patient.user?.firstName} {patient.user?.lastName}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {patient.user?.email || "No email"}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-mono text-xs font-semibold text-primary">
+                            {formatMRN(patient.id)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {patient.bloodGroup ? (
+                            <Badge variant="outline" className="text-xs font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">
+                              {patient.bloodGroup}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium">{patient.totalVisits || 1}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {formatDate(patient.lastVisit)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {/* Longitudinal Timeline Button */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedPatientForTimeline(patient)}
+                              className="h-8 text-xs flex items-center gap-1.5 border-primary/30 text-primary hover:bg-primary/10 cursor-pointer"
+                            >
+                              <History className="size-3.5" />
+                              Patient Journey
+                            </Button>
+
+                            {/* Real-time Telemetry Button */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedPatientForVitals(patient)}
+                              className="h-8 text-xs flex items-center gap-1.5 border-teal-500/30 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 cursor-pointer"
+                            >
+                              <Activity className="size-3.5" />
+                              Live Vitals
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* MOBILE PATIENTS CARDS */}
+              <div className="block md:hidden divide-y divide-border/60">
+                {filteredPatients.map((patient) => {
+                  const patName = `${patient.user?.firstName || ""} ${patient.user?.lastName || ""}`.trim() || "Patient";
+                  const patInitial = patient.user?.firstName?.[0] || "P";
+
+                  return (
+                    <div key={patient.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs border border-primary/20">
+                            {patInitial}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground truncate">{patName}</p>
+                            <span className="font-mono text-xs font-bold text-primary">
+                              {formatMRN(patient.id)}
+                            </span>
+                          </div>
                         </div>
+                        {patient.bloodGroup ? (
+                          <Badge variant="outline" className="text-[10px] font-bold bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">
+                            {patient.bloodGroup}
+                          </Badge>
+                        ) : null}
                       </div>
-                    </TableCell>
-                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Skeleton className="h-8 w-24" />
-                        <Skeleton className="h-8 w-24" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : filteredPatients.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="py-12">
-                    <EmptyState
-                      icon={User}
-                      title="No patients found"
-                      description={search ? "Try adjusting your search keywords." : "You currently have no patient records assigned."}
-                      actionLabel={search ? "Clear Search" : undefined}
-                      onAction={search ? () => setSearch("") : undefined}
-                    />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredPatients.map((patient) => (
-                  <TableRow key={patient.id} className="hover:bg-muted/40 transition-colors">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs border border-primary/20">
-                          {patient.user?.firstName?.[0] || "P"}
+
+                      <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/40 p-2.5 text-xs">
+                        <div>
+                          <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Total Visits</span>
+                          <span className="font-medium text-foreground">{patient.totalVisits || 1} Encounters</span>
                         </div>
                         <div>
-                          <div className="font-semibold text-foreground">
-                            {patient.user?.firstName} {patient.user?.lastName}
-                          </div>
-                          <div className="text-xs text-muted-foreground font-mono">
-                            ID #{patient.id}
-                          </div>
+                          <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Last Visit</span>
+                          <span className="font-medium text-foreground">{formatDate(patient.lastVisit)}</span>
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {patient.bloodGroup ? (
-                        <Badge variant="outline" className="text-xs font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">
-                          {patient.bloodGroup}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">{patient.totalVisits || 1}</TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : "-"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {/* Longitudinal Timeline Button */}
+
+                      <div className="flex items-center gap-2 pt-1">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => setSelectedPatientForTimeline(patient)}
-                          className="h-8 text-xs flex items-center gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                          className="flex-1 h-8 text-xs flex items-center justify-center gap-1.5 border-primary/30 text-primary hover:bg-primary/10 cursor-pointer"
                         >
                           <History className="size-3.5" />
-                          Patient Journey
+                          Journey
                         </Button>
-
-                        {/* Real-time Telemetry Button */}
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => setSelectedPatientForVitals(patient)}
-                          className="h-8 text-xs flex items-center gap-1.5 border-teal-500/30 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10"
+                          className="flex-1 h-8 text-xs flex items-center justify-center gap-1.5 border-teal-500/30 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 cursor-pointer"
                         >
                           <Activity className="size-3.5" />
                           Live Vitals
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -258,7 +314,7 @@ export default function DoctorPatients() {
             </DialogTitle>
             <DialogDescription>
               Live physiological telemetry stream for{" "}
-              {selectedPatientForVitals?.user?.firstName} {selectedPatientForVitals?.user?.lastName} (ID #{selectedPatientForVitals?.id}).
+              {selectedPatientForVitals?.user?.firstName} {selectedPatientForVitals?.user?.lastName} ({formatMRN(selectedPatientForVitals?.id)}).
             </DialogDescription>
           </DialogHeader>
           {selectedPatientForVitals && (

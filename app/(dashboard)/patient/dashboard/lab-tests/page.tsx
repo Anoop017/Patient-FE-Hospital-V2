@@ -9,6 +9,7 @@ import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } fr
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { FlaskConical, RefreshCw, FileDown, Eye, FileText } from "lucide-react";
 import { downloadReport } from "@/lib/reports";
+import { formatLabOrderRef, formatDate } from "@/lib/formatters";
 
 export default function PatientLabTests() {
   const [tests, setTests] = useState<any[]>([]);
@@ -134,68 +135,133 @@ export default function PatientLabTests() {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="whitespace-nowrap">Date</TableHead>
-                <TableHead className="whitespace-nowrap">Test Name</TableHead>
-                <TableHead className="whitespace-nowrap">Category</TableHead>
-                <TableHead className="whitespace-nowrap">Doctor</TableHead>
-                <TableHead className="whitespace-nowrap">Status</TableHead>
-                <TableHead className="text-right whitespace-nowrap">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTests.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                    <FlaskConical className="mx-auto h-8 w-8 mb-2 opacity-40" />
-                    <p className="font-medium">No lab tests found</p>
-                    <p className="text-xs">Ordered laboratory test reports will appear here.</p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredTests.map((test) => (
-                  <TableRow key={test.id}>
-                    <TableCell className="text-sm">
-                      {test.testDate
-                        ? new Date(test.testDate).toLocaleDateString()
-                        : (test.createdAt ? new Date(test.createdAt).toLocaleDateString() : "—")}
-                    </TableCell>
-                    <TableCell className="font-medium">{test.testName || test.name || "—"}</TableCell>
-                    <TableCell className="text-sm">{test.testType || test.category || "General"}</TableCell>
-                    <TableCell className="text-sm">
-                      {test.doctor?.user ? `Dr. ${test.doctor.user.firstName} ${test.doctor.user.lastName}` : (test.doctorName || "—")}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(test.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => downloadReport("lab", test.id)}
-                          title="Download Lab Report PDF"
-                          className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30"
-                        >
-                          <FileDown className="h-3.5 w-3.5" />
-                          PDF
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedTest(test)}
-                          className="h-8 text-xs flex items-center gap-1"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          Details
-                        </Button>
+          {filteredTests.length === 0 ? (
+            <div className="text-center text-muted-foreground py-12 px-4">
+              <FlaskConical className="mx-auto h-8 w-8 mb-2 opacity-40" />
+              <p className="font-medium text-foreground">No lab tests found</p>
+              <p className="text-xs text-muted-foreground mt-1">Ordered laboratory test reports will appear here.</p>
+            </div>
+          ) : (
+            <>
+              {/* DESKTOP LAB TESTS TABLE */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Accession #</TableHead>
+                      <TableHead className="whitespace-nowrap">Date</TableHead>
+                      <TableHead className="whitespace-nowrap">Test Name</TableHead>
+                      <TableHead className="whitespace-nowrap">Category</TableHead>
+                      <TableHead className="whitespace-nowrap">Ordered By</TableHead>
+                      <TableHead className="whitespace-nowrap">Status</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTests.map((test) => (
+                      <TableRow key={test.id}>
+                        <TableCell className="font-mono text-xs font-semibold text-primary">
+                          {formatLabOrderRef(test.id)}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {formatDate(test.testDate || test.createdAt)}
+                        </TableCell>
+                        <TableCell className="font-medium">{test.testName || test.name || "—"}</TableCell>
+                        <TableCell className="text-sm">{test.testType || test.category || "General"}</TableCell>
+                        <TableCell className="text-sm">
+                          {test.doctor?.user ? `Dr. ${test.doctor.user.firstName} ${test.doctor.user.lastName}` : (test.doctorName || "Staff")}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(test.status)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => downloadReport("lab", test.id)}
+                              title="Download Lab Report PDF"
+                              className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30 cursor-pointer"
+                            >
+                              <FileDown className="h-3.5 w-3.5" />
+                              PDF
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedTest(test)}
+                              className="h-8 text-xs flex items-center gap-1 cursor-pointer"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              Details
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* MOBILE LAB TESTS CARDS */}
+              <div className="block md:hidden divide-y divide-border/60">
+                {filteredTests.map((test) => (
+                  <div key={test.id} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono text-xs font-bold text-primary">
+                            {formatLabOrderRef(test.id)}
+                          </span>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            {test.testType || test.category || "General"}
+                          </Badge>
+                        </div>
+                        <h4 className="text-sm font-semibold text-foreground mt-1">
+                          {test.testName || test.name || "Laboratory Test"}
+                        </h4>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                      <div className="shrink-0">
+                        {getStatusBadge(test.status)}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/40 p-2.5 text-xs">
+                      <div>
+                        <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Order Date</span>
+                        <span className="font-medium text-foreground">{formatDate(test.testDate || test.createdAt)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Ordered By</span>
+                        <span className="font-medium text-foreground truncate block">
+                          {test.doctor?.user ? `Dr. ${test.doctor.user.firstName} ${test.doctor.user.lastName}` : (test.doctorName || "Staff")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => downloadReport("lab", test.id)}
+                        className="flex-1 h-8 text-xs flex items-center justify-center gap-1.5 text-primary border-primary/30 cursor-pointer"
+                      >
+                        <FileDown className="h-3.5 w-3.5" />
+                        Download PDF
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedTest(test)}
+                        className="flex-1 h-8 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        View Results
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -220,7 +286,7 @@ export default function PatientLabTests() {
               <div>
                 <span className="text-muted-foreground block">Order Date:</span>
                 <span className="font-semibold text-foreground">
-                  {selectedTest.testDate ? new Date(selectedTest.testDate).toLocaleDateString() : (selectedTest.createdAt ? new Date(selectedTest.createdAt).toLocaleDateString() : "—")}
+                  {formatDate(selectedTest.testDate || selectedTest.createdAt)}
                 </span>
               </div>
               <div>
@@ -234,8 +300,8 @@ export default function PatientLabTests() {
                 </span>
               </div>
               <div>
-                <span className="text-muted-foreground block">Lab Test ID:</span>
-                <span className="font-mono font-semibold text-foreground">#{selectedTest.id}</span>
+                <span className="text-muted-foreground block">Accession Ref:</span>
+                <span className="font-mono font-bold text-primary">{formatLabOrderRef(selectedTest.id)}</span>
               </div>
             </div>
 

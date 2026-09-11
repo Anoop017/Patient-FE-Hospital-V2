@@ -98,12 +98,12 @@ export default function DoctorDashboard() {
 
       {/* Real-Time Patient Vitals & ICU Telemetry Section */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <div className="flex items-center gap-2">
             <Radio className="size-4 text-rose-500 animate-pulse" />
             <h2 className="text-base font-bold tracking-tight">Real-Time Patient Vitals & ICU Telemetry</h2>
           </div>
-          <span className="text-xs text-muted-foreground font-mono">Stream: Live WebSocket (Port 4000)</span>
+          <span className="text-xs text-muted-foreground font-mono">Stream: Live WebSocket (Go Port 4000)</span>
         </div>
         <DoctorVitalsLiveMonitor />
       </div>

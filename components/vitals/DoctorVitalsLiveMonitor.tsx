@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { getVitalsWsUrl, fetchRecentVitalsAlerts, fetchVitalsHistory } from "@/lib/reports";
+import { formatMRN } from "@/lib/formatters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -81,12 +82,16 @@ export function DoctorVitalsLiveMonitor({
 
       ws.onmessage = (event) => {
         try {
-          const message = JSON.parse(event.data);
-          if (message.type === "vitals_update" && message.data) {
-            const v: VitalSign = message.data;
-            const key = `p_${v.patientId || v.admissionId || "default"}`;
-            setVitalsMap((prev) => ({ ...prev, [key]: v }));
-            setActivePatientKey((curr) => (!curr || curr === key ? key : curr));
+          const rawLines = typeof event.data === "string" ? event.data.trim().split("\n") : [];
+          for (const raw of rawLines) {
+            if (!raw) continue;
+            const message = JSON.parse(raw);
+            if (message.type === "vitals_update" && message.data) {
+              const v: VitalSign = message.data;
+              const key = `p_${v.patientId || v.admissionId || "default"}`;
+              setVitalsMap((prev) => ({ ...prev, [key]: v }));
+              setActivePatientKey((curr) => (!curr || curr === key ? key : curr));
+            }
           }
         } catch {
           // parse error ignored
@@ -203,7 +208,7 @@ export function DoctorVitalsLiveMonitor({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="font-bold text-base sm:text-lg tracking-tight text-white flex items-center gap-2">
-                {currentVital.patientName || `Patient #${currentVital.patientId || "ICU"}`}
+                {currentVital.patientName || formatMRN(currentVital.patientId || "ICU")}
               </h4>
               {isWarning && (
                 <span className="text-xs text-amber-400/90 font-medium font-mono">
@@ -295,7 +300,7 @@ export function DoctorVitalsLiveMonitor({
                     isCrit ? "bg-rose-500 animate-ping" : isWarn ? "bg-amber-400" : "bg-emerald-400"
                   }`}
                 />
-                {v.patientName || `Patient #${v.patientId}`} (Bed {v.bedNumber || "?"})
+                {v.patientName || formatMRN(v.patientId)} (Bed {v.bedNumber || "?"})
               </button>
             );
           })}
@@ -449,7 +454,7 @@ export function DoctorVitalsLiveMonitor({
           <DialogHeader>
             <DialogTitle>Vitals Telemetry History (Last 24 Hours)</DialogTitle>
             <DialogDescription>
-              Physiological records recorded for {currentVital.patientName || `Patient #${currentVital.patientId}`}.
+              Physiological records recorded for {currentVital.patientName || formatMRN(currentVital.patientId)}.
             </DialogDescription>
           </DialogHeader>
 

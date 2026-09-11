@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { api } from "@/lib/api";
+import { formatMRN } from "@/lib/formatters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -282,10 +283,10 @@ export function PatientTimeline({ patientId, patientInfo, onOpenTelemetry }: Pat
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h2 className="text-xl font-bold tracking-tight">
                   {patientDetails?.user?.firstName} {patientDetails?.user?.lastName}
-                  {!patientDetails?.user?.firstName && (patientDetails?.name || `Patient #${patientId}`)}
+                  {!patientDetails?.user?.firstName && (patientDetails?.name || formatMRN(patientId))}
                 </h2>
-                <Badge variant="outline" className="text-xs font-mono">
-                  ID: #{patientId}
+                <Badge variant="outline" className="text-xs font-mono bg-muted/40">
+                  {formatMRN(patientId)}
                 </Badge>
                 {patientDetails?.bloodGroup && (
                   <Badge variant="outline" className="text-xs font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">

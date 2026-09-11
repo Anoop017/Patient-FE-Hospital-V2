@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { BedDouble, ClipboardList, RefreshCw, FileDown } from "lucide-react";
 import { downloadReport } from "@/lib/reports";
+import { formatAdmissionRef, formatDate } from "@/lib/formatters";
 
 export default function PatientBedAvailability() {
   const [beds, setBeds] = useState<any[]>([]);
@@ -243,57 +244,114 @@ export default function PatientBedAvailability() {
             <CardDescription>Your inpatient admissions, ward allocations, and discharge history.</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">Admission Date</TableHead>
-                  <TableHead className="whitespace-nowrap">Discharge Date</TableHead>
-                  <TableHead className="whitespace-nowrap">Ward & Bed</TableHead>
-                  <TableHead className="whitespace-nowrap">Reason / Diagnosis</TableHead>
-                  <TableHead className="whitespace-nowrap">Status</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {myAdmissions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                      <BedDouble className="mx-auto h-8 w-8 mb-2 opacity-40" />
-                      <p className="font-medium">No inpatient admissions on record</p>
-                      <p className="text-xs">Any hospital stays or ward admissions will be recorded here.</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  myAdmissions.map((adm) => (
-                    <TableRow key={adm.id}>
-                      <TableCell className="font-medium text-sm">
-                        {adm.admissionDate ? new Date(adm.admissionDate).toLocaleDateString() : "—"}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {adm.dischargeDate ? new Date(adm.dischargeDate).toLocaleDateString() : "Present"}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {adm.ward?.name || adm.wardName || "General Ward"} • Bed {adm.bed?.bedNumber || adm.bedNumber || "—"}
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate text-sm">{adm.reason || adm.diagnosis || "Medical Stay"}</TableCell>
-                      <TableCell>{getAdmissionStatusBadge(adm.status)}</TableCell>
-                      <TableCell className="text-right">
+            {myAdmissions.length === 0 ? (
+              <div className="text-center text-muted-foreground py-12 px-4">
+                <BedDouble className="mx-auto h-8 w-8 mb-2 opacity-40" />
+                <p className="font-medium text-foreground">No inpatient admissions on record</p>
+                <p className="text-xs text-muted-foreground mt-1">Any hospital stays or ward admissions will be recorded here.</p>
+              </div>
+            ) : (
+              <>
+                {/* DESKTOP ADMISSIONS TABLE */}
+                <div className="hidden md:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="whitespace-nowrap">Admission Ref</TableHead>
+                        <TableHead className="whitespace-nowrap">Admission Date</TableHead>
+                        <TableHead className="whitespace-nowrap">Discharge Date</TableHead>
+                        <TableHead className="whitespace-nowrap">Ward & Bed</TableHead>
+                        <TableHead className="whitespace-nowrap">Reason / Diagnosis</TableHead>
+                        <TableHead className="whitespace-nowrap">Status</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {myAdmissions.map((adm) => (
+                        <TableRow key={adm.id}>
+                          <TableCell className="font-mono text-xs font-semibold text-primary">
+                            {formatAdmissionRef(adm.id)}
+                          </TableCell>
+                          <TableCell className="font-medium text-sm">
+                            {formatDate(adm.admissionDate || adm.createdAt)}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {adm.dischargeDate ? formatDate(adm.dischargeDate) : "Present"}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {adm.ward?.name || adm.wardName || "General Ward"} • Bed {adm.bed?.bedNumber || adm.bedNumber || "—"}
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate text-sm">{adm.reason || adm.diagnosis || "Medical Stay"}</TableCell>
+                          <TableCell>{getAdmissionStatusBadge(adm.status)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => downloadReport("discharge", adm.id)}
+                              title="Download Discharge Summary PDF"
+                              className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30 ml-auto cursor-pointer"
+                            >
+                              <FileDown className="h-3.5 w-3.5" />
+                              PDF Summary
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* MOBILE ADMISSIONS CARDS */}
+                <div className="block md:hidden divide-y divide-border/60">
+                  {myAdmissions.map((adm) => (
+                    <div key={adm.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="font-mono text-xs font-bold text-primary">
+                            {formatAdmissionRef(adm.id)}
+                          </span>
+                          <h4 className="text-sm font-bold text-foreground mt-0.5">
+                            {adm.ward?.name || adm.wardName || "Inpatient Ward"} • Bed {adm.bed?.bedNumber || adm.bedNumber || "—"}
+                          </h4>
+                        </div>
+                        <div className="shrink-0">
+                          {getAdmissionStatusBadge(adm.status)}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/40 p-2.5 text-xs">
+                        <div>
+                          <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Admitted On</span>
+                          <span className="font-medium text-foreground">{formatDate(adm.admissionDate || adm.createdAt)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Discharged On</span>
+                          <span className="font-medium text-foreground">{adm.dischargeDate ? formatDate(adm.dischargeDate) : "Currently In Ward"}</span>
+                        </div>
+                        {adm.reason && (
+                          <div className="col-span-2 pt-1 border-t border-border/40">
+                            <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Admission Reason</span>
+                            <span className="text-foreground">{adm.reason || adm.diagnosis}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-1">
                         <Button
-                          size="sm"
                           variant="outline"
+                          size="sm"
                           onClick={() => downloadReport("discharge", adm.id)}
-                          title="Download Discharge Summary PDF"
-                          className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30"
+                          className="w-full h-8 text-xs flex items-center justify-center gap-1.5 text-primary border-primary/30 cursor-pointer"
                         >
                           <FileDown className="h-3.5 w-3.5" />
-                          PDF
+                          Download Discharge Summary PDF
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}

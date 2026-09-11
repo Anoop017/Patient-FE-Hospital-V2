@@ -14,6 +14,8 @@ import { Plus, Search, Pill } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
+import { formatMRN, formatPrescriptionRef, formatDate } from "@/lib/formatters";
 
 export default function DoctorPrescriptions() {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
@@ -160,11 +162,13 @@ export default function DoctorPrescriptions() {
         />
       </div>
 
-      <Card>
+      {/* Desktop Table View */}
+      <Card className="hidden md:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="whitespace-nowrap">Rx Ref</TableHead>
                 <TableHead className="whitespace-nowrap">Date</TableHead>
                 <TableHead className="whitespace-nowrap">Patient</TableHead>
                 <TableHead className="whitespace-nowrap">Medication</TableHead>
@@ -177,6 +181,7 @@ export default function DoctorPrescriptions() {
               {loading ? (
                 Array.from({ length: 4 }).map((_, idx) => (
                   <TableRow key={idx}>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-36" /></TableCell>
@@ -187,7 +192,7 @@ export default function DoctorPrescriptions() {
                 ))
               ) : filteredPrescriptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="p-8">
+                  <TableCell colSpan={7} className="p-8">
                     <EmptyState
                       icon={Pill}
                       title="No prescriptions found"
@@ -207,9 +212,21 @@ export default function DoctorPrescriptions() {
               ) : (
                 filteredPrescriptions.map((rx) => (
                   <TableRow key={rx.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-mono text-xs">{new Date(rx.createdAt || rx.issuedDate).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono text-[11px] bg-muted/40">
+                        {formatPrescriptionRef(rx.id)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{formatDate(rx.createdAt || rx.issuedDate)}</TableCell>
                     <TableCell className="font-semibold text-foreground">
-                      {rx.patient?.user ? `${rx.patient.user.firstName} ${rx.patient.user.lastName}` : `Patient #${rx.patientId || "—"}`}
+                      {rx.patient?.user ? (
+                        <span>
+                          {rx.patient.user.firstName} {rx.patient.user.lastName}
+                          <span className="text-[11px] text-muted-foreground ml-1.5 font-mono">({formatMRN(rx.patientId)})</span>
+                        </span>
+                      ) : (
+                        formatMRN(rx.patientId)
+                      )}
                     </TableCell>
                     <TableCell className="font-semibold text-emerald-600 dark:text-emerald-400">{rx.medication || "—"}</TableCell>
                     <TableCell className="text-muted-foreground text-xs">{rx.dosage || "—"}</TableCell>
@@ -222,6 +239,67 @@ export default function DoctorPrescriptions() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-3">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, idx) => (
+            <Card key={idx} className="p-4">
+              <Skeleton className="h-5 w-24 mb-2" />
+              <Skeleton className="h-4 w-40 mb-3" />
+              <Skeleton className="h-8 w-full" />
+            </Card>
+          ))
+        ) : filteredPrescriptions.length === 0 ? (
+          <Card className="p-6">
+            <EmptyState
+              icon={Pill}
+              title="No prescriptions found"
+              description={search ? "No matches found." : "No prescriptions issued yet."}
+              actionLabel={search ? "Clear Search" : "Issue First Prescription"}
+              onAction={() => {
+                if (search) setSearch("");
+                else setDialogOpen(true);
+              }}
+            />
+          </Card>
+        ) : (
+          filteredPrescriptions.map((rx) => (
+            <Card key={rx.id} className="p-4 space-y-3 shadow-xs border-border/70 hover:border-primary/40 transition-colors">
+              <div className="flex items-center justify-between gap-2">
+                <Badge variant="outline" className="font-mono text-xs bg-muted/50">
+                  {formatPrescriptionRef(rx.id)}
+                </Badge>
+                <span className="text-xs text-muted-foreground font-mono">
+                  {formatDate(rx.createdAt || rx.issuedDate)}
+                </span>
+              </div>
+
+              <div>
+                <div className="font-semibold text-foreground text-sm">
+                  {rx.patient?.user
+                    ? `${rx.patient.user.firstName} ${rx.patient.user.lastName}`
+                    : formatMRN(rx.patientId)}
+                </div>
+                <div className="text-xs text-muted-foreground font-mono">
+                  {formatMRN(rx.patientId)}
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <div className="font-semibold text-emerald-700 dark:text-emerald-300 text-sm">
+                  💊 {rx.medication || "Medication"}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                  <span><strong>Dose:</strong> {rx.dosage || "—"}</span>
+                  <span><strong>Freq:</strong> {rx.frequency || "—"}</span>
+                  <span><strong>Duration:</strong> {rx.duration || "—"}</span>
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogHeader>
@@ -242,11 +320,11 @@ export default function DoctorPrescriptions() {
                 {patients.map((p) => {
                   const name = p.user
                     ? `${p.user.firstName || ""} ${p.user.lastName || ""}`.trim()
-                    : p.name || `Patient #${p.id}`;
+                    : p.name || formatMRN(p.id);
                   const email = p.user?.email ? ` (${p.user.email})` : "";
                   return (
                     <option key={p.id} value={p.id}>
-                      {name || `Patient #${p.id}`}{email}
+                      {name || formatMRN(p.id)}{email}
                     </option>
                   );
                 })}

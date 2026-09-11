@@ -16,6 +16,7 @@ import { downloadReport } from "@/lib/reports";
 import { toast } from "@/components/ui/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { formatMRN, formatLabOrderRef, formatDate } from "@/lib/formatters";
 
 export default function DoctorLabTests() {
   const [tests, setTests] = useState<any[]>([]);
@@ -164,11 +165,13 @@ export default function DoctorLabTests() {
         />
       </div>
 
-      <Card>
+      {/* Desktop Table View */}
+      <Card className="hidden md:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="whitespace-nowrap">Accession #</TableHead>
                 <TableHead className="whitespace-nowrap">Date</TableHead>
                 <TableHead className="whitespace-nowrap">Patient</TableHead>
                 <TableHead className="whitespace-nowrap">Test Name</TableHead>
@@ -182,6 +185,7 @@ export default function DoctorLabTests() {
               {loading ? (
                 Array.from({ length: 4 }).map((_, idx) => (
                   <TableRow key={idx}>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-36" /></TableCell>
@@ -193,7 +197,7 @@ export default function DoctorLabTests() {
                 ))
               ) : filteredTests.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="p-8">
+                  <TableCell colSpan={8} className="p-8">
                     <EmptyState
                       icon={FlaskConical}
                       title="No lab tests found"
@@ -213,9 +217,21 @@ export default function DoctorLabTests() {
               ) : (
                 filteredTests.map((test) => (
                   <TableRow key={test.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-mono text-xs">{new Date(test.createdAt || test.testDate).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono text-[11px] bg-muted/40">
+                        {formatLabOrderRef(test.id)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{formatDate(test.createdAt || test.testDate)}</TableCell>
                     <TableCell className="font-semibold text-foreground">
-                      {test.patient?.user ? `${test.patient.user.firstName} ${test.patient.user.lastName}` : `Patient #${test.patientId || "—"}`}
+                      {test.patient?.user ? (
+                        <span>
+                          {test.patient.user.firstName} {test.patient.user.lastName}
+                          <span className="text-[11px] text-muted-foreground ml-1.5 font-mono">({formatMRN(test.patientId)})</span>
+                        </span>
+                      ) : (
+                        formatMRN(test.patientId)
+                      )}
                     </TableCell>
                     <TableCell className="font-semibold text-foreground">{test.testName || test.name || "—"}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{test.testType || "General"}</TableCell>
@@ -240,6 +256,84 @@ export default function DoctorLabTests() {
         </CardContent>
       </Card>
 
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-3">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, idx) => (
+            <Card key={idx} className="p-4">
+              <Skeleton className="h-5 w-24 mb-2" />
+              <Skeleton className="h-4 w-40 mb-3" />
+              <Skeleton className="h-8 w-full" />
+            </Card>
+          ))
+        ) : filteredTests.length === 0 ? (
+          <Card className="p-6">
+            <EmptyState
+              icon={FlaskConical}
+              title="No lab tests found"
+              description={search ? "No matches found." : "No lab tests ordered yet."}
+              actionLabel={search ? "Clear Search" : "Order First Test"}
+              onAction={() => {
+                if (search) setSearch("");
+                else setDialogOpen(true);
+              }}
+            />
+          </Card>
+        ) : (
+          filteredTests.map((test) => (
+            <Card key={test.id} className="p-4 space-y-3 shadow-xs border-border/70 hover:border-primary/40 transition-colors">
+              <div className="flex items-center justify-between gap-2">
+                <Badge variant="outline" className="font-mono text-xs bg-muted/50">
+                  {formatLabOrderRef(test.id)}
+                </Badge>
+                {getStatusBadge(test.status)}
+              </div>
+
+              <div>
+                <div className="font-semibold text-foreground text-sm">
+                  {test.testName || test.name || "Laboratory Test"}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Type: <span className="font-medium text-foreground">{test.testType || "General"}</span>
+                </div>
+              </div>
+
+              <div className="text-xs p-2.5 rounded-lg bg-muted/30 border border-border/50 flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Patient:</span>
+                  <span className="font-medium text-foreground">
+                    {test.patient?.user
+                      ? `${test.patient.user.firstName} ${test.patient.user.lastName}`
+                      : formatMRN(test.patientId)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">MRN:</span>
+                  <span className="font-mono text-[11px] text-muted-foreground">{formatMRN(test.patientId)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Date:</span>
+                  <span className="font-mono text-[11px]">{formatDate(test.createdAt || test.testDate)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-border/40 pt-1 mt-1">
+                  <span className="text-muted-foreground">Result:</span>
+                  <span className="font-medium text-primary text-[11px]">{test.result || "Pending Analysis"}</span>
+                </div>
+              </div>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => downloadReport("lab", test.id)}
+                className="w-full h-8 text-xs cursor-pointer flex items-center justify-center gap-1.5 hover:border-primary/50"
+              >
+                <FileDown className="h-3.5 w-3.5 text-primary" /> Download Lab Report
+              </Button>
+            </Card>
+          ))
+        )}
+      </div>
+
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogHeader>
           <DialogTitle>Order Lab Test</DialogTitle>
@@ -259,11 +353,11 @@ export default function DoctorLabTests() {
                 {patients.map((p) => {
                   const name = p.user
                     ? `${p.user.firstName || ""} ${p.user.lastName || ""}`.trim()
-                    : p.name || `Patient #${p.id}`;
+                    : p.name || formatMRN(p.id);
                   const email = p.user?.email ? ` (${p.user.email})` : "";
                   return (
                     <option key={p.id} value={p.id}>
-                      {name || `Patient #${p.id}`}{email}
+                      {name || formatMRN(p.id)}{email}
                     </option>
                   );
                 })}

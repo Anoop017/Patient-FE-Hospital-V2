@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { getVitalsWsUrl, fetchVitalsHistory, fetchRecentVitalsAlerts } from "@/lib/reports";
+import { formatMRN } from "@/lib/formatters";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -167,7 +168,7 @@ export function IcuTelemetryConsole() {
                 id: pId,
                 patientId: v.patientId || Number(pId) || 0,
                 admissionId: v.admissionId,
-                patientName: v.patientName || prev[pId]?.patientName || `Patient #${pId}`,
+                patientName: v.patientName || prev[pId]?.patientName || formatMRN(pId),
                 bedNumber: v.bedNumber || prev[pId]?.bedNumber || "ICU Bed",
                 wardName: v.wardName || prev[pId]?.wardName || "ICU Ward",
                 heartRate: v.heartRate ?? 75,
@@ -452,7 +453,7 @@ export function IcuTelemetryConsole() {
                     <Zap className="size-3 text-emerald-500 animate-pulse" />
                     Resp: {p.respiratoryRate}/min
                   </span>
-                  <span className="font-mono text-[10px]">ID #{p.patientId}</span>
+                  <span className="font-mono text-[10px] font-semibold text-primary">{formatMRN(p.patientId)}</span>
                 </div>
               </div>
             );

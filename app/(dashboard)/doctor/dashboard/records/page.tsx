@@ -14,6 +14,7 @@ import { Plus, Search, FileText } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { formatMRN, formatDate } from "@/lib/formatters";
 
 export default function DoctorMedicalRecords() {
   const [records, setRecords] = useState<any[]>([]);
@@ -199,9 +200,9 @@ export default function DoctorMedicalRecords() {
               ) : (
                 filteredRecords.map((r) => (
                   <TableRow key={r.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-mono text-xs">{new Date(r.createdAt || r.recordDate).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-mono text-xs">{formatDate(r.createdAt || r.recordDate)}</TableCell>
                     <TableCell className="font-semibold text-foreground">
-                      {r.patient?.user ? `${r.patient.user.firstName} ${r.patient.user.lastName}` : `Patient #${r.patientId || "—"}`}
+                      {r.patient?.user ? `${r.patient.user.firstName} ${r.patient.user.lastName}` : (r.patientId ? formatMRN(r.patientId) : "—")}
                     </TableCell>
                     <TableCell className="font-medium text-foreground">{r.diagnosis || "—"}</TableCell>
                     <TableCell className="text-muted-foreground text-xs">{r.symptoms || "—"}</TableCell>
@@ -234,11 +235,11 @@ export default function DoctorMedicalRecords() {
                 {patients.map((p) => {
                   const name = p.user
                     ? `${p.user.firstName || ""} ${p.user.lastName || ""}`.trim()
-                    : p.name || `Patient #${p.id}`;
+                    : p.name || formatMRN(p.id);
                   const email = p.user?.email ? ` (${p.user.email})` : "";
                   return (
                     <option key={p.id} value={p.id}>
-                      {name || `Patient #${p.id}`}{email}
+                      {name || formatMRN(p.id)}{email}
                     </option>
                   );
                 })}

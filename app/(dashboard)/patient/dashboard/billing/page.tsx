@@ -29,6 +29,14 @@ import {
   Download
 } from "lucide-react";
 import { downloadReport } from "@/lib/reports";
+import {
+  formatInvoiceRef,
+  formatCurrency,
+  formatDateTime,
+  formatDate,
+  formatAppointmentRef,
+  formatAdmissionRef,
+} from "@/lib/formatters";
 
 interface Payment {
   id: string | number;
@@ -534,113 +542,217 @@ export default function PatientBillingPage() {
         {activeTab !== "history" ? (
           <Card>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Invoice # / Ref</TableHead>
-                    <TableHead className="whitespace-nowrap">Issued Date</TableHead>
-                    <TableHead className="whitespace-nowrap">Due Date</TableHead>
-                    <TableHead className="whitespace-nowrap">Total Amount</TableHead>
-                    <TableHead className="whitespace-nowrap">Paid Amount</TableHead>
-                    <TableHead className="whitespace-nowrap">Remaining</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredBills.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
-                        <FileText className="mx-auto h-8 w-8 mb-2 opacity-40" />
-                        <p className="font-medium">No invoices found</p>
-                        <p className="text-xs">
-                          {searchQuery ? "Try refining your search query." : "You do not have any invoices under this section."}
-                        </p>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredBills.map((bill) => {
+              {filteredBills.length === 0 ? (
+                <div className="text-center py-12 px-4 text-muted-foreground">
+                  <FileText className="mx-auto h-8 w-8 mb-2 opacity-40" />
+                  <p className="font-medium text-foreground">No invoices found</p>
+                  <p className="text-xs mt-1">
+                    {searchQuery ? "Try refining your search query." : "You do not have any invoices under this section."}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* DESKTOP INVOICES TABLE (md and up) */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="whitespace-nowrap">Invoice # / Ref</TableHead>
+                          <TableHead className="whitespace-nowrap">Issued Date</TableHead>
+                          <TableHead className="whitespace-nowrap">Due Date</TableHead>
+                          <TableHead className="whitespace-nowrap">Total Amount</TableHead>
+                          <TableHead className="whitespace-nowrap">Paid Amount</TableHead>
+                          <TableHead className="whitespace-nowrap">Remaining</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredBills.map((bill) => {
+                          const total = parseFloat(String(bill.totalAmount || 0));
+                          const paid = parseFloat(String(bill.paidAmount || 0));
+                          const remaining = calculateRemaining(bill);
+                          const overdue = isOverdue(bill);
+
+                          return (
+                            <TableRow key={bill.id} className={overdue ? "bg-red-500/5" : ""}>
+                              <TableCell className="font-mono text-xs font-semibold">
+                                <div className="flex flex-col">
+                                  <span className="text-primary font-bold">{formatInvoiceRef(bill.id)}</span>
+                                  {bill.appointmentId && (
+                                    <span className="text-[11px] font-mono text-muted-foreground">{formatAppointmentRef(bill.appointmentId)}</span>
+                                  )}
+                                  {bill.admissionId && (
+                                    <span className="text-[11px] font-mono text-muted-foreground">{formatAdmissionRef(bill.admissionId)}</span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {formatDate(bill.createdAt)}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {bill.dueDate ? (
+                                  <div className="flex flex-col">
+                                    <span className={overdue ? "font-semibold text-red-600 dark:text-red-400" : ""}>
+                                      {formatDate(bill.dueDate)}
+                                    </span>
+                                    {overdue && (
+                                      <span className="text-[10px] text-red-600 dark:text-red-400 font-medium">Overdue</span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  "—"
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm font-semibold">{formatCurrency(total)}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{formatCurrency(paid)}</TableCell>
+                              <TableCell className="text-sm font-bold">
+                                <span className={remaining > 0 ? (overdue ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400") : "text-emerald-600 dark:text-emerald-400"}>
+                                  {formatCurrency(remaining)}
+                                </span>
+                              </TableCell>
+                              <TableCell>{getStatusBadge(bill.status, overdue)}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => downloadReport("billing", bill.id)}
+                                    title="Download PDF Invoice"
+                                    className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30 cursor-pointer"
+                                  >
+                                    <FileDown className="h-3.5 w-3.5" />
+                                    PDF
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openInvoiceModal(bill)}
+                                    className="h-8 text-xs cursor-pointer"
+                                  >
+                                    Statement
+                                  </Button>
+                                  {bill.status !== "paid" && bill.status !== "cancelled" && remaining > 0 && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => openPaymentModal(bill)}
+                                      className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-medium cursor-pointer"
+                                    >
+                                      Pay Now
+                                      <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* MOBILE INVOICES CARDS (below md) */}
+                  <div className="block md:hidden divide-y divide-border/60">
+                    {filteredBills.map((bill) => {
                       const total = parseFloat(String(bill.totalAmount || 0));
                       const paid = parseFloat(String(bill.paidAmount || 0));
                       const remaining = calculateRemaining(bill);
                       const overdue = isOverdue(bill);
 
                       return (
-                        <TableRow key={bill.id} className={overdue ? "bg-red-500/5" : ""}>
-                          <TableCell className="font-mono text-xs font-semibold">
-                            <div className="flex flex-col">
-                              <span>{formatInvoiceId(bill.id)}</span>
-                              {bill.appointmentId && (
-                                <span className="text-[11px] font-sans text-muted-foreground">Appt #{bill.appointmentId}</span>
-                              )}
-                              {bill.admissionId && (
-                                <span className="text-[11px] font-sans text-muted-foreground">Admission #{bill.admissionId}</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {bill.createdAt ? new Date(bill.createdAt).toLocaleDateString() : "—"}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {bill.dueDate ? (
-                              <div className="flex flex-col">
-                                <span className={overdue ? "font-semibold text-red-600 dark:text-red-400" : ""}>
-                                  {new Date(bill.dueDate).toLocaleDateString()}
+                        <div key={bill.id} className={`p-4 space-y-3 ${overdue ? "bg-red-500/5" : ""}`}>
+                          {/* Card Header */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-mono text-sm font-bold text-primary">
+                                  {formatInvoiceRef(bill.id)}
                                 </span>
-                                {overdue && (
-                                  <span className="text-[10px] text-red-600 dark:text-red-400 font-medium">Overdue</span>
+                                {bill.appointmentId && (
+                                  <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0">
+                                    {formatAppointmentRef(bill.appointmentId)}
+                                  </Badge>
+                                )}
+                                {bill.admissionId && (
+                                  <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0">
+                                    {formatAdmissionRef(bill.admissionId)}
+                                  </Badge>
                                 )}
                               </div>
-                            ) : (
-                              "—"
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm font-semibold">${total.toFixed(2)}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">${paid.toFixed(2)}</TableCell>
-                          <TableCell className="text-sm font-bold">
-                            <span className={remaining > 0 ? (overdue ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400") : "text-emerald-600 dark:text-emerald-400"}>
-                              ${remaining.toFixed(2)}
-                            </span>
-                          </TableCell>
-                          <TableCell>{getStatusBadge(bill.status, overdue)}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => downloadReport("billing", bill.id)}
-                                title="Download PDF Invoice"
-                                className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30"
-                              >
-                                <FileDown className="h-3.5 w-3.5" />
-                                PDF
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openInvoiceModal(bill)}
-                                className="h-8 text-xs"
-                              >
-                                Statement
-                              </Button>
-                              {bill.status !== "paid" && bill.status !== "cancelled" && remaining > 0 && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => openPaymentModal(bill)}
-                                  className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-                                >
-                                  Pay Now
-                                  <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-                                </Button>
-                              )}
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Issued: {formatDate(bill.createdAt)}
+                              </p>
                             </div>
-                          </TableCell>
-                        </TableRow>
+                            <div className="shrink-0">
+                              {getStatusBadge(bill.status, overdue)}
+                            </div>
+                          </div>
+
+                          {/* Amounts Grid */}
+                          <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted/40 p-2.5 text-center text-xs">
+                            <div>
+                              <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Total</span>
+                              <span className="font-semibold text-foreground">{formatCurrency(total)}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Paid</span>
+                              <span className="text-muted-foreground">{formatCurrency(paid)}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Balance</span>
+                              <span className={`font-bold ${remaining > 0 ? (overdue ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400") : "text-emerald-600 dark:text-emerald-400"}`}>
+                                {formatCurrency(remaining)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Due Date Indicator */}
+                          {bill.dueDate && (
+                            <div className="flex items-center justify-between text-xs px-1">
+                              <span className="text-muted-foreground flex items-center gap-1">
+                                <Clock className="h-3 w-3" /> Due Date:
+                              </span>
+                              <span className={`font-medium ${overdue ? "text-red-600 dark:text-red-400 font-bold" : "text-foreground"}`}>
+                                {formatDate(bill.dueDate)} {overdue && "(Overdue)"}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2 pt-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => downloadReport("billing", bill.id)}
+                              className="flex-1 h-8 text-xs flex items-center justify-center gap-1 text-primary border-primary/30 cursor-pointer"
+                            >
+                              <FileDown className="h-3.5 w-3.5" />
+                              PDF
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openInvoiceModal(bill)}
+                              className="flex-1 h-8 text-xs cursor-pointer"
+                            >
+                              Statement
+                            </Button>
+                            {bill.status !== "paid" && bill.status !== "cancelled" && remaining > 0 && (
+                              <Button
+                                size="sm"
+                                onClick={() => openPaymentModal(bill)}
+                                className="flex-1 h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-semibold cursor-pointer"
+                              >
+                                Pay Now
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                       );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                    })}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -653,57 +765,91 @@ export default function PatientBillingPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Payment Date & Time</TableHead>
-                    <TableHead>Invoice ID</TableHead>
-                    <TableHead>Payment Method</TableHead>
-                    <TableHead>Reference Number</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allPayments.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                        <Receipt className="mx-auto h-8 w-8 mb-2 opacity-40" />
-                        <p className="font-medium">No payment transactions recorded yet</p>
-                        <p className="text-xs">Once you settle invoices, payment logs will appear here.</p>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    allPayments.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell className="text-sm">
-                          {payment.paymentDate ? new Date(payment.paymentDate).toLocaleString() : "—"}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {formatInvoiceId(payment.billId)}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          <span className="inline-flex items-center gap-1.5">
-                            <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
-                            {formatMethodName(payment.paymentMethod)}
+              {allPayments.length === 0 ? (
+                <div className="text-center py-12 px-4 text-muted-foreground">
+                  <Receipt className="mx-auto h-8 w-8 mb-2 opacity-40" />
+                  <p className="font-medium text-foreground">No payment transactions recorded yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Once you settle invoices, payment logs will appear here.</p>
+                </div>
+              ) : (
+                <>
+                  {/* DESKTOP PAYMENTS TABLE */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Payment Date & Time</TableHead>
+                          <TableHead>Invoice ID</TableHead>
+                          <TableHead>Payment Method</TableHead>
+                          <TableHead>Reference Number</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead className="text-right">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allPayments.map((payment) => (
+                          <TableRow key={payment.id}>
+                            <TableCell className="text-sm">
+                              {formatDateTime(payment.paymentDate)}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs font-semibold text-primary">
+                              {formatInvoiceRef(payment.billId)}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              <span className="inline-flex items-center gap-1.5">
+                                <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                                {formatMethodName(payment.paymentMethod)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="font-mono text-xs text-muted-foreground">
+                              {payment.referenceNumber || "—"}
+                            </TableCell>
+                            <TableCell className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                              +{formatCurrency(payment.amount)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant="success" className="text-xs">
+                                Completed
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* MOBILE PAYMENTS CARDS */}
+                  <div className="block md:hidden divide-y divide-border/60">
+                    {allPayments.map((payment) => (
+                      <div key={payment.id} className="p-4 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs font-bold text-primary">
+                            {formatInvoiceRef(payment.billId)}
                           </span>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
-                          {payment.referenceNumber || "—"}
-                        </TableCell>
-                        <TableCell className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                          +${parseFloat(String(payment.amount || 0)).toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Badge variant="success" className="text-xs">
+                          <Badge variant="success" className="text-[10px]">
                             Completed
                           </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                        </div>
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <CreditCard className="h-3.5 w-3.5" />
+                            {formatMethodName(payment.paymentMethod)}
+                          </span>
+                          <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                            +{formatCurrency(payment.amount)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/40">
+                          <span>{formatDateTime(payment.paymentDate)}</span>
+                          {payment.referenceNumber && (
+                            <span className="font-mono text-[10px]">Ref: {payment.referenceNumber}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         )}

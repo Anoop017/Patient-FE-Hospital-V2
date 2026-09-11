@@ -23,6 +23,7 @@ import {
   CalendarCheck
 } from "lucide-react";
 import { toast } from "@/components/ui/toast";
+import { formatAppointmentRef, formatDateTime } from "@/lib/formatters";
 
 interface Slot {
   time: string;
@@ -331,72 +332,154 @@ export default function PatientAppointments() {
       {/* Appointments List Card */}
       <Card>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="whitespace-nowrap">Date & Time</TableHead>
-                <TableHead className="whitespace-nowrap">Doctor</TableHead>
-                <TableHead className="whitespace-nowrap">Specialization</TableHead>
-                <TableHead className="whitespace-nowrap">Reason</TableHead>
-                <TableHead className="whitespace-nowrap">Status</TableHead>
-                <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAppointments.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                    <Calendar className="mx-auto h-8 w-8 mb-2 opacity-40" />
-                    <p className="font-medium">No appointments found</p>
-                    <p className="text-xs">Schedule an appointment with our doctors to get started.</p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredAppointments.map((appt) => {
+          {filteredAppointments.length === 0 ? (
+            <div className="text-center text-muted-foreground py-12 px-4">
+              <Calendar className="mx-auto h-8 w-8 mb-2 opacity-40" />
+              <p className="font-medium text-foreground">No appointments found</p>
+              <p className="text-xs text-muted-foreground mt-1">Schedule an appointment with our specialists to get started.</p>
+            </div>
+          ) : (
+            <>
+              {/* DESKTOP TABLE VIEW (md and up) */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Ref #</TableHead>
+                      <TableHead className="whitespace-nowrap">Date & Time</TableHead>
+                      <TableHead className="whitespace-nowrap">Doctor</TableHead>
+                      <TableHead className="whitespace-nowrap">Specialization</TableHead>
+                      <TableHead className="whitespace-nowrap">Reason</TableHead>
+                      <TableHead className="whitespace-nowrap">Status</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAppointments.map((appt) => {
+                      const isScheduled = appt.status?.toLowerCase() === "scheduled";
+                      return (
+                        <TableRow key={appt.id}>
+                          <TableCell className="font-mono text-xs font-semibold text-primary">
+                            {formatAppointmentRef(appt.id)}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                              <span>{formatDateTime(appt.appointmentDate)}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">
+                              {appt.doctor?.user ? `Dr. ${appt.doctor.user.firstName} ${appt.doctor.user.lastName}` : (appt.doctorName || "—")}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-[11px] font-normal">
+                              {appt.doctor?.specialization || "General"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate">{appt.reason || "Routine Checkup"}</TableCell>
+                          <TableCell>{getStatusBadge(appt.status)}</TableCell>
+                          <TableCell className="text-right">
+                            {isScheduled && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedApptToCancel(appt);
+                                  setCancelModalOpen(true);
+                                }}
+                                className="h-8 text-xs cursor-pointer"
+                              >
+                                Cancel
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* MOBILE CARDS VIEW (below md) */}
+              <div className="block md:hidden divide-y divide-border/60">
+                {filteredAppointments.map((appt) => {
                   const isScheduled = appt.status?.toLowerCase() === "scheduled";
+                  const docName = appt.doctor?.user
+                    ? `Dr. ${appt.doctor.user.firstName} ${appt.doctor.user.lastName}`
+                    : (appt.doctorName || "General Specialist");
+                  const docInitials = docName
+                    .replace("Dr. ", "")
+                    .split(" ")
+                    .map((n: string) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase() || "DR";
+
                   return (
-                    <TableRow key={appt.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>{new Date(appt.appointmentDate).toLocaleString([], {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}</span>
+                    <div key={appt.id} className="p-4 space-y-3">
+                      {/* Top Row: Doctor Info + Status Badge */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs border border-primary/20">
+                            {docInitials}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground truncate">{docName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {appt.doctor?.specialization || "General Specialist"}
+                            </p>
+                          </div>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">
-                          {appt.doctor?.user ? `Dr. ${appt.doctor.user.firstName} ${appt.doctor.user.lastName}` : (appt.doctorName || "—")}
+                        <div className="shrink-0">
+                          {getStatusBadge(appt.status)}
                         </div>
-                      </TableCell>
-                      <TableCell>{appt.doctor?.specialization || "General"}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{appt.reason || "Routine Checkup"}</TableCell>
-                      <TableCell>{getStatusBadge(appt.status)}</TableCell>
-                      <TableCell className="text-right">
-                        {isScheduled && (
+                      </div>
+
+                      {/* Middle Details Grid */}
+                      <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/40 p-2.5 text-xs">
+                        <div>
+                          <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Encounter Ref</span>
+                          <span className="font-mono font-bold text-primary">{formatAppointmentRef(appt.id)}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Scheduled For</span>
+                          <span className="font-medium text-foreground flex items-center gap-1 mt-0.5">
+                            <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                            {formatDateTime(appt.appointmentDate)}
+                          </span>
+                        </div>
+                        {appt.reason && (
+                          <div className="col-span-2 pt-1 border-t border-border/40">
+                            <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Reason</span>
+                            <span className="text-foreground">{appt.reason}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Button */}
+                      {isScheduled && (
+                        <div className="pt-1">
                           <Button
-                            variant="destructive"
+                            variant="outline"
                             size="sm"
                             onClick={() => {
                               setSelectedApptToCancel(appt);
                               setCancelModalOpen(true);
                             }}
-                            className="h-8 text-xs"
+                            className="w-full h-8 text-xs font-semibold text-destructive border-destructive/30 hover:bg-destructive/10 cursor-pointer"
                           >
-                            Cancel
+                            Cancel Appointment
                           </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
+                        </div>
+                      )}
+                    </div>
                   );
-                })
-              )}
-            </TableBody>
-          </Table>
+                })}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

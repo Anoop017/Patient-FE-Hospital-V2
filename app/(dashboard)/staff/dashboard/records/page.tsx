@@ -14,6 +14,8 @@ import { Plus, Search, FileText } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
+import { formatMRN, formatDate } from "@/lib/formatters";
 
 export default function StaffMedicalRecords() {
   const [records, setRecords] = useState<any[]>([]);
@@ -102,7 +104,8 @@ export default function StaffMedicalRecords() {
         />
       </div>
 
-      <Card>
+      {/* Desktop Table View */}
+      <Card className="hidden md:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -112,7 +115,7 @@ export default function StaffMedicalRecords() {
                 <TableHead className="whitespace-nowrap">Diagnosis</TableHead>
                 <TableHead className="whitespace-nowrap">Symptoms</TableHead>
                 <TableHead className="whitespace-nowrap">Treatment</TableHead>
-                <TableHead className="whitespace-nowrap">Notes</TableHead>
+                <TableHead className="whitespace-nowrap">Clinical Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -121,10 +124,10 @@ export default function StaffMedicalRecords() {
                   <TableRow key={idx}>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-36" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                   </TableRow>
                 ))
               ) : filteredRecords.length === 0 ? (
@@ -149,9 +152,16 @@ export default function StaffMedicalRecords() {
               ) : (
                 filteredRecords.map((r) => (
                   <TableRow key={r.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-mono text-xs">{new Date(r.createdAt || r.recordDate).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-mono text-xs">{formatDate(r.createdAt || r.recordDate)}</TableCell>
                     <TableCell className="font-semibold text-foreground">
-                      {r.patient?.user ? `${r.patient.user.firstName} ${r.patient.user.lastName}` : `Patient #${r.patientId || "—"}`}
+                      {r.patient?.user ? (
+                        <span>
+                          {r.patient.user.firstName} {r.patient.user.lastName}
+                          <span className="text-[11px] text-muted-foreground ml-1.5 font-mono">({formatMRN(r.patientId)})</span>
+                        </span>
+                      ) : (
+                        formatMRN(r.patientId)
+                      )}
                     </TableCell>
                     <TableCell className="font-medium text-foreground">{r.diagnosis || "—"}</TableCell>
                     <TableCell className="text-muted-foreground text-xs">{r.symptoms || "—"}</TableCell>
@@ -164,6 +174,72 @@ export default function StaffMedicalRecords() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-3">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, idx) => (
+            <Card key={idx} className="p-4">
+              <Skeleton className="h-5 w-24 mb-2" />
+              <Skeleton className="h-4 w-40 mb-3" />
+              <Skeleton className="h-8 w-full" />
+            </Card>
+          ))
+        ) : filteredRecords.length === 0 ? (
+          <Card className="p-6">
+            <EmptyState
+              icon={FileText}
+              title="No medical records found"
+              description={search ? "No matches found." : "No records created yet."}
+              actionLabel={search ? "Clear Search" : "Create First Record"}
+              onAction={() => {
+                if (search) setSearch("");
+                else setDialogOpen(true);
+              }}
+            />
+          </Card>
+        ) : (
+          filteredRecords.map((r) => (
+            <Card key={r.id} className="p-4 space-y-3 shadow-xs border-border/70 hover:border-primary/40 transition-colors">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-foreground text-sm">
+                  📋 {r.diagnosis || "Clinical Record"}
+                </span>
+                <span className="text-xs text-muted-foreground font-mono">
+                  {formatDate(r.createdAt || r.recordDate)}
+                </span>
+              </div>
+
+              <div>
+                <div className="font-medium text-foreground text-xs">
+                  {r.patient?.user
+                    ? `${r.patient.user.firstName} ${r.patient.user.lastName}`
+                    : formatMRN(r.patientId)}
+                </div>
+                <div className="text-[11px] text-muted-foreground font-mono">
+                  {formatMRN(r.patientId)}
+                </div>
+              </div>
+
+              <div className="text-xs p-2.5 rounded-lg bg-muted/30 border border-border/50 space-y-1.5">
+                <div>
+                  <span className="text-muted-foreground font-medium">Symptoms: </span>
+                  <span className="text-foreground">{r.symptoms || "—"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground font-medium">Treatment: </span>
+                  <span className="text-foreground">{r.treatment || "—"}</span>
+                </div>
+                {r.notes && (
+                  <div className="border-t border-border/40 pt-1 text-muted-foreground italic">
+                    {r.notes}
+                  </div>
+                )}
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogHeader>
@@ -184,11 +260,11 @@ export default function StaffMedicalRecords() {
                 {patients.map((p) => {
                   const name = p.user
                     ? `${p.user.firstName || ""} ${p.user.lastName || ""}`.trim()
-                    : p.name || `Patient #${p.id}`;
+                    : p.name || formatMRN(p.id);
                   const email = p.user?.email ? ` (${p.user.email})` : "";
                   return (
                     <option key={p.id} value={p.id}>
-                      {name || `Patient #${p.id}`}{email}
+                      {name || formatMRN(p.id)}{email}
                     </option>
                   );
                 })}

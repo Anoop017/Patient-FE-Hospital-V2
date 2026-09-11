@@ -16,6 +16,7 @@ import { DoctorVitalsLiveMonitor } from "@/components/vitals/DoctorVitalsLiveMon
 import { toast } from "@/components/ui/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { formatAdmissionRef, formatDate, formatMRN } from "@/lib/formatters";
 
 export default function DoctorAdmissions() {
   const [admissions, setAdmissions] = useState<any[]>([]);
@@ -196,90 +197,188 @@ export default function DoctorAdmissions() {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="whitespace-nowrap">Date</TableHead>
-                <TableHead className="whitespace-nowrap">Patient</TableHead>
-                <TableHead className="whitespace-nowrap">Bed / Ward</TableHead>
-                <TableHead className="whitespace-nowrap">Reason</TableHead>
-                <TableHead className="whitespace-nowrap">Status</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                Array.from({ length: 4 }).map((_, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-36" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-44" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-28 ml-auto" /></TableCell>
-                  </TableRow>
-                ))
-              ) : filteredAdmissions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="p-8">
-                    <EmptyState
-                      icon={Building2}
-                      title="No admissions found"
-                      description={
-                        search
-                          ? "No inpatient admissions match your search query."
-                          : "No patients are currently admitted."
-                      }
-                      actionLabel={search ? "Clear Search" : "Admit New Patient"}
-                      onAction={() => {
-                        if (search) setSearch("");
-                        else setDialogOpen(true);
-                      }}
-                    />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                admissions.map((adm) => (
-                  <TableRow key={adm.id}>
-                    <TableCell>{new Date(adm.createdAt || adm.admissionDate).toLocaleDateString()}</TableCell>
-                    <TableCell className="font-medium">{adm.patient?.user ? `${adm.patient.user.firstName} ${adm.patient.user.lastName}` : "-"}</TableCell>
-                    <TableCell>{adm.bed ? `Bed ${adm.bed.bedNumber} (${adm.bed.ward?.name || "General"})` : "-"}</TableCell>
-                    <TableCell>{adm.reason || "-"}</TableCell>
-                    <TableCell>{getStatusBadge(adm.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+          {loading ? (
+            <div className="p-6 space-y-3">
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+            </div>
+          ) : filteredAdmissions.length === 0 ? (
+            <div className="p-8">
+              <EmptyState
+                icon={Building2}
+                title="No admissions found"
+                description={
+                  search
+                    ? "No inpatient admissions match your search query."
+                    : "No patients are currently admitted."
+                }
+                actionLabel={search ? "Clear Search" : "Admit New Patient"}
+                onAction={() => {
+                  if (search) setSearch("");
+                  else setDialogOpen(true);
+                }}
+              />
+            </div>
+          ) : (
+            <>
+              {/* DESKTOP ADMISSIONS TABLE */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Admission Ref</TableHead>
+                      <TableHead className="whitespace-nowrap">Date</TableHead>
+                      <TableHead className="whitespace-nowrap">Patient</TableHead>
+                      <TableHead className="whitespace-nowrap">Bed / Ward</TableHead>
+                      <TableHead className="whitespace-nowrap">Reason</TableHead>
+                      <TableHead className="whitespace-nowrap">Status</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAdmissions.map((adm) => (
+                      <TableRow key={adm.id}>
+                        <TableCell className="font-mono text-xs font-semibold text-primary">
+                          {formatAdmissionRef(adm.id)}
+                        </TableCell>
+                        <TableCell className="text-sm">{formatDate(adm.createdAt || adm.admissionDate)}</TableCell>
+                        <TableCell className="font-medium text-foreground">
+                          {adm.patient?.user ? `${adm.patient.user.firstName} ${adm.patient.user.lastName}` : "—"}
+                        </TableCell>
+                        <TableCell>{adm.bed ? `Bed ${adm.bed.bedNumber} (${adm.bed.ward?.name || "General"})` : "—"}</TableCell>
+                        <TableCell className="text-sm">{adm.reason || "—"}</TableCell>
+                        <TableCell>{getStatusBadge(adm.status)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedVitalsAdm(adm)}
+                              title="Live ICU Telemetry"
+                              className="h-8 text-xs flex items-center gap-1 border-teal-500/30 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 cursor-pointer"
+                            >
+                              <Activity className="h-3.5 w-3.5" />
+                              Vitals
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => downloadReport("discharge", adm.id)}
+                              title="Download Discharge Summary PDF"
+                              className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30 cursor-pointer"
+                            >
+                              <FileDown className="h-3.5 w-3.5" />
+                              PDF
+                            </Button>
+                            {adm.status?.toLowerCase() === "admitted" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDischarge(adm.id)}
+                                className="h-8 text-xs cursor-pointer text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+                              >
+                                Discharge
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* MOBILE ADMISSIONS CARDS */}
+              <div className="block md:hidden divide-y divide-border/60">
+                {filteredAdmissions.map((adm) => {
+                  const patName = adm.patient?.user
+                    ? `${adm.patient.user.firstName} ${adm.patient.user.lastName}`
+                    : "Patient";
+                  const patInitials = patName
+                    .split(" ")
+                    .map((n: string) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase() || "PT";
+
+                  return (
+                    <div key={adm.id} className="p-4 space-y-3">
+                      {/* Top Row */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs border border-primary/20">
+                            {patInitials}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground truncate">{patName}</p>
+                            <span className="font-mono text-xs text-primary font-bold">
+                              {formatAdmissionRef(adm.id)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="shrink-0">
+                          {getStatusBadge(adm.status)}
+                        </div>
+                      </div>
+
+                      {/* Middle Details Grid */}
+                      <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/40 p-2.5 text-xs">
+                        <div>
+                          <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Ward & Bed</span>
+                          <span className="font-medium text-foreground">
+                            {adm.bed ? `Bed ${adm.bed.bedNumber} (${adm.bed.ward?.name || "General"})` : "—"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Admission Date</span>
+                          <span className="font-medium text-foreground">{formatDate(adm.createdAt || adm.admissionDate)}</span>
+                        </div>
+                        {adm.reason && (
+                          <div className="col-span-2 pt-1 border-t border-border/40">
+                            <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Diagnosis / Reason</span>
+                            <span className="text-foreground">{adm.reason}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-2 pt-1">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => setSelectedVitalsAdm(adm)}
-                          title="Live ICU Telemetry"
-                          className="h-8 text-xs flex items-center gap-1 border-teal-500/30 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10"
+                          className="flex-1 h-8 text-xs flex items-center justify-center gap-1 border-teal-500/30 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 cursor-pointer"
                         >
                           <Activity className="h-3.5 w-3.5" />
-                          Vitals
+                          Live Vitals
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => downloadReport("discharge", adm.id)}
-                          title="Download Discharge Summary PDF"
-                          className="h-8 text-xs flex items-center gap-1 text-primary hover:bg-primary/10 border-primary/30"
+                          className="flex-1 h-8 text-xs flex items-center justify-center gap-1 text-primary border-primary/30 cursor-pointer"
                         >
                           <FileDown className="h-3.5 w-3.5" />
-                          PDF
+                          PDF Summary
                         </Button>
                         {adm.status?.toLowerCase() === "admitted" && (
-                          <Button size="sm" variant="outline" onClick={() => handleDischarge(adm.id)} className="h-8 text-xs">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDischarge(adm.id)}
+                            className="flex-1 h-8 text-xs text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 cursor-pointer"
+                          >
                             Discharge
                           </Button>
                         )}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -326,11 +425,11 @@ export default function DoctorAdmissions() {
                 {patients.map((p) => {
                   const name = p.user
                     ? `${p.user.firstName || ""} ${p.user.lastName || ""}`.trim()
-                    : p.name || `Patient #${p.id}`;
+                    : p.name || formatMRN(p.id);
                   const email = p.user?.email ? ` (${p.user.email})` : "";
                   return (
                     <option key={p.id} value={p.id}>
-                      {name || `Patient #${p.id}`}{email}
+                      {name || formatMRN(p.id)}{email}
                     </option>
                   );
                 })}
