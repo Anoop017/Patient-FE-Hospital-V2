@@ -2,7 +2,8 @@
  * Helper utility for triggering PDF report downloads & telemetry from the Go microservice.
  */
 
-const DEFAULT_GO_SERVICE_URL = process.env.NEXT_PUBLIC_GO_SERVICE_URL || "http://localhost:4000";
+const rawGoUrl = process.env.NEXT_PUBLIC_GO_SERVICE_URL || "http://localhost:4000";
+const DEFAULT_GO_SERVICE_URL = rawGoUrl.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");
 const DEFAULT_WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:4000/api/v1/ws/vitals";
 
 export function getReportsBaseUrl(): string {
